@@ -1,0 +1,21 @@
+{% extends "index.html" %}
+
+{% block title %}Share - {% endblock %}
+
+{% block pageTitle %}Write a Story{% endblock %}
+
+{% block content %}
+    <form class="storyForm" action="{{ post_url }}" method="post">
+      <label for="storyTitle">Story Title: </label>
+      <br />
+      <input class="title" type="text" id="storyTitle" name="title" maxlength="55" value="{{ story.title  }}" />
+      <br /><br />
+      <label for="storyContent">Story Text: </label>
+      <div><textarea class="text" name="content" id="storyContent">{{ story.content }}</textarea></div>
+      <label for="storyCategory">Category: </label>
+      <br />
+      <input class="title" type="text" id="storyCategory" name="category_name" maxlength="55" value="{{ story.category.name }}" />
+      <br />
+      <div><input type="submit" value="{{ input_button }}"></div>
+    </form>
+{% endblock content %}

@@ -1,0 +1,124 @@
+// This import applies a global reset to any page that imports this stylesheet.
+@import blueprint/reset.sass
+// To configure blueprint, edit the partials/base.sass file.
+@import partials/base.sass
+// Import all the default blueprint modules so that we can access their mixins.
+@import blueprint
+// Import the non-default scaffolding module.
+@import blueprint/modules/scaffolding.sass
+@import compass/utilities.sass
+
+// To generate css equivalent to the blueprint css but with your configuration applied, uncomment:
+// +blueprint
+
+//Recommended Blueprint configuration with scoping and semantic layout:
+body.bp
+  +blueprint-typography
+  +blueprint-utilities
+  +blueprint-debug
+  +blueprint-interaction
+  // Remove the scaffolding when you're ready to start doing visual design.
+  // Or leave it in if you're happy with how blueprint looks out-of-the-box
+  +blueprint-scaffolding
+form.bp
+  +blueprint-form
+
+// Page layout can be done using mixins applied to your semantic classes and IDs:
+body
+  :font-size 112.5%
+  :font-family corbel,calibri,'lucida sans unicode','gill sans', new','lucida grande',helvetica,sans-serif
+  :background-color #000F00
+  :color #111
+  .container
+    +container
+  .header
+    +column(15)
+    +append(1)
+    +last      
+    :padding-top .5em
+    :padding-bottom .4em
+    :position relative
+    .pageTitle
+      :color #FFFFCC
+      :font-size 300%
+      :overflow hidden
+      :padding-bottom .3em
+      :padding-top .3em  
+      :padding-left .5em
+      a
+        :color #FFFFCC
+        :text-decoration none
+      a:hover
+        :color #FFD0B2
+  .sidebar
+    +column(3)
+    +last
+  .nav
+    :list-style none
+    :margin 0em
+    li
+      :text-align left  
+      a
+        :display block        
+        :padding 3px 10px 4px
+        :color #FFFFCC
+        :text-decoration none
+      a:hover    
+        :background-color #002000
+        :color #f6f6f6
+    li.last
+      :margin-bottom 0
+  .content
+    +column(11)
+    +append(1)
+    +prepend(1)
+    :line-height 1.7em
+    :padding-bottom 30px
+    :padding-top 30px
+    :background-color #FFFFE1
+    .userStories
+      li
+        :margin-bottom 5px
+        :overflow hidden
+      a
+        :color #00332B
+  .storyContent p
+    :margin-bottom 1em
+  .storyAuthor
+    :text-align right
+    :padding-right 2em
+    :color #444
+  .storyForm
+    +blueprint-form-layout
+    +blueprint-form-borders
+    +blueprint-form-sizes(400px,400px,400px)
+    .title
+      :font-family Georgia
+  .footer
+    +column(11)
+    +append(4)
+    +prepend(1)
+    +last
+    :font-size 95%
+    :text-align center
+    :padding-top 30px
+    a
+      :text-decoration none
+      :color #ffffcc
+    a:hover
+      :color #FFD0B2
+body.three-col
+  #container
+    +container
+  #header, #footer
+    +column(!blueprint_grid_columns)
+  #sidebar
+    // One third of the grid columns, rounding down. With 24 cols, this is 8.
+    !sidebar_columns = floor(!blueprint_grid_columns / 3)
+    +column(!sidebar_columns)
+  #content
+    // Two thirds of the grid columns, rounding up.
+    // With 24 cols, this is 16.
+    !content_columns = ceil(2 * !blueprint_grid_columns / 3)
+    // true means it's the last column in the row
+    +column(!content_columns, true)
