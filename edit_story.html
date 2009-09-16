@@ -1,0 +1,31 @@
+{% extends "base_form_page.html" %}
+
+{% block title %}Edit Story - {% endblock %}
+
+{% block page_title %}Edit Story{% endblock %}
+
+{% block form_action %}/editstory.do{% endblock %}
+
+{% block hidden_story_key %}
+<input type="hidden" name="story" value="{{ story.key }}" />
+{% endblock %}
+
+{% block editable_title %}
+{{ story.title }}
+{% endblock %}
+
+{% block editable_content %}
+{{ story.content }}
+{% endblock %}
+
+{% block editable_category_name %}
+{{ story.category.name }}
+{% endblock %}
+
+{% block editable_author_nickname %}
+{{ story.author.name }}
+{% endblock %}
+
+{% block input_button %}Save Story{% endblock %}
+
+

@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+	  "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
+    <title>{% block title %}{% endblock %}Storylog</title>
+    <link href="/favicon.ico" type="image/ico" rel="shortcut icon"/>
+
+    <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" />
+  <link href="/stylesheets/print.css" media="print" rel="stylesheet" type="text/css" />
+  <!--[if lt IE 8]>
+      <link href="/stylesheets/ie.css" media="screen, projection" rel="stylesheet" type="text/css" />
+  <![endif]-->
+
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <div class="header">
+      
+	<h1 class="pageTitle">
+      {% block page_title %}
+	  <a href="/Story:{{ story.slug|title }}">
+	    {{ story.title|striptags|escape }}
+	  </a>
+	  {% endblock page_title %}
+	</h1>
+    
+      </div>{# end header div #}
+
+      <div class="content">     
+    
+	{% block content %}
+	<div class="storyContent">
+	  {{ story.content|escape|linebreaks }}
+	</div>
+	<div class="storyAuthor">
+	  <a href="/Author:{{ user.user_id }}">{{ story.author.nickname }}</a>
+	</div>
+	{% endblock content %}
+
+      </div>{# end content div #}
+
+      <div class="sidebar">
+	<ul class="nav">
+	  {% block nav %}
+	  <li class="first"><a href="/">Reload</a>
+	    {% if user %}
+	  <li><a href="/You">Profile</a></li>
+	  <li><a href="/Share">Share</a></li>
+	  {% endif %}
+	  <li class="last"><a href="{{ url }}">{{ url_linktext }}</a></li>
+	  {% endblock nav %}
+	</ul>
+      </div>{# end sidebar #}
+
+
+
+      <div class="footer">
+	<a href="/about">About Storylog</a>
+      </div>
+
+    </div>{# end container #}
+
+   </body>
+</html>

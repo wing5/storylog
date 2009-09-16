@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}EMPTY FORM TITLE{% endblock %}
+
+{% block page_title %}EMPTY FORM PAGE TITLE{% endblock %}
+
+{% block content %}
+    <form class="storyForm" action="{% block form_action %}/error{% endblock %}" method="post">
+      {% block hidden_story_key %}{% endblock %}
+      <label for="storyTitle">Story Title: </label>
+      <br />
+      <input class="title" type="text" id="storyTitle" name="title" maxlength="55" value="{% block editable_title %}{% endblock %}" />
+      <br /><br />
+      <label for="storyContent">Story Text: </label>
+      <div>
+        <textarea class="text" name="content" id="storyContent">{% block editable_content %}{% endblock %}</textarea>
+      </div>
+      <label for="storyCategory">Category: </label>
+      <br />
+      <input class="title" type="text" id="storyCategory" name="category_name" maxlength="55" value="{% block editable_category_name %}{% endblock %}" />
+      <br />
+      <label for="authorNickname">Nickname (note: this will be used everywhere!): </label>
+      <br />
+      <input class="title" type="text" id="authorNickname" name="nickname" maxlength="55" value="{% block editable_author_nickname %}{% endblock %}" />
+      <br />
+      <div>
+        <input type="submit" value="{% block input_button %}EMPTY BUTTON{% endblock %}">
+      </div>
+    </form>
+{% endblock content %}
