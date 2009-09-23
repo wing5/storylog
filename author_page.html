@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ author.name }}{% endblock %}
+{% block title %}{{ author.name }} | {% endblock %}
 
 {% block page_title %}{{ author.name }}{% endblock %}
 
@@ -8,14 +8,14 @@
 {% block content %}
 
 <ol class="userStories">
-{% if author.categories %}
-{% for category in author.categories %}
+{% if categories %}
+{% for category in categories %}
 <h1>{{ category.name }}</h1>
 {% for story in category.stories %}
 <li>
-<a href="/{{ story.slug|title }}">{{ story.title|escape|title }}</a>
+<a href="/{{ story.key.name|title }}">{{ story.title|escape|title }}</a>
 <br />
-(<a href="/Edit/{{ story.slug|title }}">edit</a>)
+(<a href="/Edit/{{ story.key.name|title }}">edit</a>)
 </li>
 {% endfor %}
 {% endfor %}

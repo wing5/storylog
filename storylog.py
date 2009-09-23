@@ -13,71 +13,27 @@ class Author(db.Model):
     name = db.StringProperty(required=True,indexed=False)
     user = db.UserProperty(required=True,auto_current_user_add=True)
 
-    def __init__(self, *args, **kwargs):
-        """Automatically sets an Author key's name to the current
-        user's ID.
+    def __init__(self, *args, **kwds):
+        """Assigns a given user's id as the author's key name.
+        Assigns a given user's nickname as the author's name.
         """
-        kwargs['key_name'] = users.get_current_user().user_id()
-        db.Model.__init__(self, *args, **kwargs)
-
-    @staticmethod
-    def load(user, name = ''):
-        """Returns a new or existing Author entity for the specified
-        user. If name is given, Author's name is changed to that.
-        """
-        name = name.strip()
-        author = Author.get_by_key_name(user.user_id())
-        if author and not name:
-            return author
-        elif author and name:
-            if author.name == name:
-                return author
-            else:
-                author.name = name
-                author.put()
-                return author
-        else:
-            author = Author(
-                name = name or user.nickname(),
-                )
-            author.put()
-            return author
+        kwds['key_name'] = kwds['user'].user_id()
+        kwds['name'] = kwds['user'].nickname().split('@')[0]
+        db.Model.__init__(self, *args, **kwds)
 
 class Category(db.Model): 
-    name = db.StringProperty()
-    slug = db.StringProperty(required=True)
     author = db.ReferenceProperty(Author,
                                   collection_name='categories')
+    name = db.StringProperty(default='')
+    slug = db.StringProperty(required=True)    
 
-    def __init__(self, *args, **kwargs):
-        """Automatically sets a Category's key name to the category's
-        slug concatenated to the current user's ID.
+    def __init__(self, *args, **kwds):
+        """Assigns the category's slug + the given author's key name
+        as the category's key name.
         """
-        user_id = kwargs['author'].name()
-        cat_slug = kwargs['slug']
-        kwargs['key_name'] = user_id + cat_slug
-        db.Model.__init__(self, *args, **kwargs)
+        kwds['key_name'] = kwds['author'].name() + kwds['slug']
+        db.Model.__init__(self, *args, **kwds)
 
-    @staticmethod
-    def load(author, cat_name):
-        """Takes an Author and a cleaned up Category name as parameters;
-        returns an existing Category if one with the same name and Author
-        exists. Otherwise, a new Category is created.
-        """
-        user_id = author.key().name()
-        cat_slug = slugify(cat_name)
-        category = Category.get_by_key_name(user_id + (cat_slug or 'uncategorized'))
-        if category:
-            return category
-        else:
-            category = Category(
-                name = cat_name,
-                slug = cat_slug or 'uncategorized',
-                author = author,
-            )
-            category.put()
-            return category
- 
     @staticmethod
     def remove_if_empty(author, category):
         if not category.stories.filter('author =', author).get():
@@ -85,45 +41,25 @@ class Category(db.Model):
 
 
 class Story(db.Model):
+    author        = db.ReferenceProperty(Author,
+                                         collection_name='stories')
     title         = db.StringProperty(required=True, indexed=False)
-    slug          = db.StringProperty(required=True)
     content       = db.TextProperty(required=True) 
-    date          = db.DateTimeProperty(auto_now_add=True)
-    rand_id       = db.FloatProperty(required=True)
-    #rating_mean  = db.RatingProperty() # only 0-100
-    #rating_count = db.RatingProperty(indexed=False) # only 0-100
     category      = db.ReferenceProperty(Category,
                                          collection_name='stories')
-    author        = db.ReferenceProperty(Author,
-                                         collection_name='stories') # necessary?
+    rand_id       = db.FloatProperty(required=True)
+    date          = db.DateTimeProperty(auto_now_add=True)
+    #rating_mean  = db.RatingProperty() # only 0-100
+    #rating_count = db.RatingProperty(indexed=False) # only 0-100
 
-    def __init__(self, *args, **kwargs):
-        kwargs['key_name'] = kwargs['slug']
-        kwargs['rand_id'] = random()
-        db.Model.__init__(self, *args, **kwargs)
+
+
+    def __init__(self, *args, **kwds):
+        """Assigns the story's slug as the story's key name. Assigns
+        a random float to the story's random id.
+        """
+        db.Model.__init__(self, *args, **kwds)
         
-    @staticmethod
-    def load_new(author, title, slug, content, category):
-        slug = Story.make_unique_slug(slug)
-        story = Story(
-            author = author,
-            title = title,
-            slug = slug,
-            content = content,
-            category = category,
-            )
-        story.put()
-        return story
-
-    @staticmethod
-    def load_existing(story, author, title, content, category):
-        story.author = author
-        story.title = title
-        story.content = content
-        story.category = category
-        story.put()
-        return story
-
     @staticmethod
     def make_unique_slug(title):
         """A Story's title is transformed into a slug. If this slug
@@ -139,10 +75,10 @@ class Story(db.Model):
 
     @staticmethod
     def find_unique_slug(slug, attempt=1):
-        """Returns 'slug-' + (1-5) or an error if none of those slugs
-        are available.
+        """Returns 'slug-' + '[1-5]' or an error if all of those slugs
+        have been taken already.
         """
-        new_slug = slug + '-' + attempt
+        new_slug = slug + '-%d' % attempt
         story = Story.get_by_key_name(new_slug)
         if not story:
             return new_slug
@@ -150,7 +86,7 @@ class Story(db.Model):
             attempt += 1
             return Story.find_unique_slug(new_slug, attempt)
         else:
-            return naming_error("Please pick a different title.") # make this function!
+            return naming_error("Please change your story's title. Six other people already chose a very similar title.") # make this function!
 
     @staticmethod
     def user_has_access(user, story):
@@ -176,7 +112,7 @@ class BaseRequestHandler(webapp.RequestHandler):
 
 class MainPage(BaseRequestHandler):
     def get(self):
-        story = Story.gql("WHERE rand_id > :rand ORDER BY rand_id", rand=random()).get()
+        story = Story.all().filter('rand_id >', random()).get()
     
         self.generate('base.html', {
             'story': story,})
@@ -189,48 +125,102 @@ class CreateStoryPage(BaseRequestHandler):
 class CreateStoryAction(BaseRequestHandler):
     def post(self):
         user = users.get_current_user()
-
-        nickname = cleanup(self.request.get('nickname'))
-        author = Author.load(user, nickname)
-
-        category_name = cleanup(self.request.get('category_name'))
-        category = Category.load(author, category_name)
+        user_id = user.user_id()
         
-        content = db.Text(cleanup(self.request.get('content')))
+        errors = []
 
-        title = cleanup(self.request.get('title'))
-        slug = slugify(title)
+        if not self.request.get('title'):
+            errors.append('Please enter a title.')
+        if not self.request.get('content'):
+            errors.append('Please enter a story.')
+        if not errors:
+            author = Author.get_by_key_name(user_id)
+            if not author:
+                author = Author(user=user)
+                author.put()
 
-        story = Story.load_new(author, title, slug, content, category)
+            category_name = cleanup(self.request.get('category_name'))
+            category_slug = slugify(category_name)
+            category = Category.get_by_key_name(user_id + category_slug)
+            if not category:
+                category = Category(
+                    author=author,
+                    category_name=category_name,
+                    slug=category_slug)
+                category.put()
 
-        self.redirect('/Story:%s' % (story.slug.title()))
+            title = cleanup(self.request.get('title'))
+            slug = Story.make_unique_slug(title)
+            content = db.Text(cleanup(self.request.get('content')))
+            #change rand_id handling before launch
+            rand_id = random()
+            if not Story.all().get():
+                rand_id = 1.0
 
+            story = Story(
+                key_name = slug,
+                author=author,
+                title=title,
+                content=content,
+                category=category,
+                rand_id = rand_id)
+            story.put()
+
+            #all outgoing urls should be in title format
+            self.redirect('/%s' % (story.key().name().title())) 
+
+        self.generate('create_story.html', {
+            'errors': errors,
+            'title': self.request.get('title'),
+            'content': self.request.get('content'),
+            'category_name': self.request.get('category_name'),
+            })
 
 class EditStoryPage(BaseRequestHandler):
     @login_required
     def get(self, slug):
         user = users.get_current_user()
+        user_id = user.user_id()   
+        errors = []
+
+        #all incoming urls should be made lowercase
         story = Story.get_by_key_name(slug.lower())
 
-        if not story or not story.user_has_access(user, story):
-            self.error(403)
-            return
-        
+        if not user or not story or not story.user_has_access(user, story):
+            errors.append("You don't have access to edit this story")
+        if not errors:
+            story_key = story.key()
+            title = story.title
+            content = story.content
+            category_name = story.category.name
+            
+            self.generate('edit_story.html', {
+                'story_key': story_key,
+                'title': title,
+                'content': content,
+                'category_name': category_name,
+                })
+
         self.generate('edit_story.html', {
-            'story': story,
+            'errors': errors,
             })
+
+        
 
 class EditStoryAction(BaseRequestHandler):
     def post(self):
         user = users.get_current_user()
-        story_key = self.request.get('story')
+        user_id = user.user_id()
         
+        story_key = self.request.get('story')
         story = Story.get(story_key)
         
         #if not story or story.user_has_access(user, story):
 
-        nickname = cleanup(self.request.get('nickname'))
-        author = Author.load(user, nickname)
+        author = Author.get_by_key_name(user_id)
+        if not author:
+            author_error("You haven't created any stories yet.") # create this function!
+            
 
         new_category_name = cleanup(self.request.get('category_name'))
         category = Category.load(author, new_category_name)
@@ -250,7 +240,7 @@ class EditStoryAction(BaseRequestHandler):
         self.redirect('/%s' % (story.slug.title()))
 
 class CategoryPage(BaseRequestHandler):
-    def get(self, *args):
+    def get(self, author, cat_name):
         if user_id and cat_slug:
             author = Author.get_by_key_name(user_id)
             category = author.categories.filter('slug =', cat_slug).get()
@@ -266,27 +256,35 @@ class AuthorPage(BaseRequestHandler):
     def get(self, user_id):
         if user_id:
             author = Author.get_by_key_name(user_id)
+            categories = author.categories.fetch(100)
         else:
             self.error(404)
             return
 
         self.generate('author_page.html', {
             'author': author,
+            'categories': categories,
             })
 
 class UserProfilePage(BaseRequestHandler):
     @login_required
     def get(self):
         user = users.get_current_user()
+        user_id = user.user_id()
+        errors = []
 
-        if user:
-            author = Author.load(user)
+        if not user:
+            errors.append('Please login.')
+            self.generate('author_page.html', {
+                'errors' : errors,
+                })
         else:
-            self.error(403)
-            return
+            author = Author.get_by_key_name(user_id)
+            categories = author.categories #set max num of stories/categories?
 
         self.generate('author_page.html', {
-            'author': author,
+            'author' : author,
+            'categories': categories,
             })
 
 class SingleStoryPage(BaseRequestHandler):
@@ -297,7 +295,7 @@ class SingleStoryPage(BaseRequestHandler):
             self.error(404)
             return
             
-        self.generate('base.html', {
+        self.generate('single_story.html', {
             'story': story,
             })
 

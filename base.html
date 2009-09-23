@@ -21,27 +21,35 @@
 
       <div class="header">
       
-	<h1 class="pageTitle">
-      {% block page_title %}
-	  <a href="/Story:{{ story.slug|title }}">
-	    {{ story.title|striptags|escape }}
-	  </a>
-	  {% endblock page_title %}
-	</h1>
+	    <h1 class="pageTitle">
+          {% block page_title %}
+	      <a href="/{{ story.slug|title }}">
+	        {{ story.title|striptags|escape }}
+	      </a>
+	      {% endblock page_title %}
+	    </h1>
     
       </div>{# end header div #}
 
-      <div class="content">     
-    
-	{% block content %}
-	<div class="storyContent">
-	  {{ story.content|escape|linebreaks }}
-	</div>
-	<div class="storyAuthor">
-	  <a href="/Author:{{ user.user_id }}">{{ story.author.nickname }}</a>
-	</div>
-	{% endblock content %}
+      <div class="content">
 
+        {% if errors %}
+        <ul class="error_box">
+          {% for error in errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+    
+	    {% block content %}
+	    <div class="storyContent">
+	      {{ story.content|escape|linebreaks }}
+	    </div>
+	    <div class="storyAuthor">
+	      <a href="Author/{{ story.author.key.name }}">{{ story.author.name }}</a>
+	    </div>
+	    {% endblock content %}
+        
       </div>{# end content div #}
 
       <div class="sidebar">
