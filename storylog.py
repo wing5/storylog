@@ -25,14 +25,7 @@ class Category(db.Model):
     author = db.ReferenceProperty(Author,
                                   collection_name='categories')
     name = db.StringProperty(default='')
-    slug = db.StringProperty(required=True)    
-
-    def __init__(self, *args, **kwds):
-        """Assigns the category's slug + the given author's key name
-        as the category's key name.
-        """
-        kwds['key_name'] = kwds['author'].name() + kwds['slug']
-        db.Model.__init__(self, *args, **kwds)
+    slug = db.StringProperty(default='')    
 
     @staticmethod
     def remove_if_empty(author, category):
@@ -82,15 +75,16 @@ class Story(db.Model):
         story = Story.get_by_key_name(new_slug)
         if not story:
             return new_slug
-        elif attempt < 5:            
+        elif attempt < 5:
             attempt += 1
             return Story.find_unique_slug(new_slug, attempt)
         else:
-            return naming_error("Please change your story's title. Six other people already chose a very similar title.") # make this function!
+            return ' error '
 
-    @staticmethod
-    def user_has_access(user, story):
-        return user.user_id() == story.author.key().name()
+    def user_has_access(self, user):
+        #get_value_for_datastore returns the author's key without a db lookup
+        #alternate: ...== story.author.key().name()
+        return user.user_id() == Story.author.get_value_for_datastore(self).name()
     
 class BaseRequestHandler(webapp.RequestHandler):    
     def generate(self, template_name, template_values={}):
@@ -126,13 +120,17 @@ class CreateStoryAction(BaseRequestHandler):
     def post(self):
         user = users.get_current_user()
         user_id = user.user_id()
+        title = cleanup(self.request.get('title'))
+        slug = Story.make_unique_slug(title)
         
         errors = []
 
-        if not self.request.get('title'):
+        if not title:
             errors.append('Please enter a title.')
         if not self.request.get('content'):
             errors.append('Please enter a story.')
+        if slug == ' error ':
+            errors.append("Please change your story's title. Six other people have chosen a very similar title.")
         if not errors:
             author = Author.get_by_key_name(user_id)
             if not author:
@@ -144,25 +142,24 @@ class CreateStoryAction(BaseRequestHandler):
             category = Category.get_by_key_name(user_id + category_slug)
             if not category:
                 category = Category(
-                    author=author,
-                    category_name=category_name,
-                    slug=category_slug)
+                    key_name = user_id + category_slug,
+                    author = author,
+                    name = category_name,
+                    slug = category_slug)
                 category.put()
 
-            title = cleanup(self.request.get('title'))
-            slug = Story.make_unique_slug(title)
             content = db.Text(cleanup(self.request.get('content')))
-            #change rand_id handling before launch
+            #change the following rand_id handling before launch
             rand_id = random()
             if not Story.all().get():
                 rand_id = 1.0
 
             story = Story(
                 key_name = slug,
-                author=author,
-                title=title,
-                content=content,
-                category=category,
+                author = author,
+                title = title,
+                content = content,
+                category = category,
                 rand_id = rand_id)
             story.put()
 
@@ -186,8 +183,8 @@ class EditStoryPage(BaseRequestHandler):
         #all incoming urls should be made lowercase
         story = Story.get_by_key_name(slug.lower())
 
-        if not user or not story or not story.user_has_access(user, story):
-            errors.append("You don't have access to edit this story")
+        if not user or not story or not story.user_has_access(user):
+            errors.append("You cannot edit this story.")
         if not errors:
             story_key = story.key()
             title = story.title
@@ -211,34 +208,73 @@ class EditStoryAction(BaseRequestHandler):
     def post(self):
         user = users.get_current_user()
         user_id = user.user_id()
-        
         story_key = self.request.get('story')
         story = Story.get(story_key)
-        
-        #if not story or story.user_has_access(user, story):
-
-        author = Author.get_by_key_name(user_id)
-        if not author:
-            author_error("You haven't created any stories yet.") # create this function!
-            
-
-        new_category_name = cleanup(self.request.get('category_name'))
-        category = Category.load(author, new_category_name)
-        Category.remove_if_empty(author, story.category)
-        
-        content = db.Text(cleanup(self.request.get('content')))
-
         title = cleanup(self.request.get('title'))
-        new_slug = slugify(title)
+        slug = Story.make_unique_slug(title) # is this db call necessary before error display?
+        
+        errors = []
 
-        if story.slug == new_slug or '-'.join(new_slug.split('-')[:-1]):
-            story.delete()
-            story = Story.load_new(author, title, new_slug, content, category)
-        else:
-            story = Story.load_existing(story, author, title, content, category)
+        if not user or not story or not story.user_has_access(user):
+            errors.append("You cannot edit this story.")
+        if not self.request.get('title'):
+            errors.append('Please enter a title.')
+        if not self.request.get('content'):
+            errors.append('Please enter a story.')
+        if slug == ' error ':
+            errors.append("Please change your story's title. Six other people have already chosen a very similar title.")
+        if not errors:
+            content = db.Text(cleanup(self.request.get('content')))
+            author = Author.get_by_key_name(user_id)
+            if not author:
+                self.error(403)
+                return
 
-        self.redirect('/%s' % (story.slug.title()))
+            category_name = cleanup(self.request.get('category_name'))
+            category_slug = slugify(category_name)            
+            category = Category.get_by_key_name(user_id + category_slug)
+            old_category = story.category
+            if not category:
+                category = Category(
+                    key_name = user_id + category_slug,
+                    author = author,
+                    name = category_name,
+                    slug = category_slug)
+                category.put()
 
+            if story.title != title:
+                story.delete()
+                #change the following rand_id handling before launch
+                rand_id = random()
+                if not Story.all().get():
+                    rand_id = 1.0
+                story = Story(
+                    key_name = slug,
+                    author = author,
+                    title = title,
+                    content = content,
+                    category = category,
+                    rand_id = rand_id)
+                story.put()
+            else:
+                story.title = title
+                story.content = content
+                story.category = category
+                story.put()
+
+            #cleanup time
+            Category.remove_if_empty(author, old_category)
+            #all outgoing urls should be in title format
+            self.redirect('/%s' % (story.key().name().title())) 
+
+        self.generate('edit_story.html', {
+            'errors': errors,
+            'title': self.request.get('title'),
+            'content': self.request.get('content'),
+            'category_name': self.request.get('category_name'),
+            })
+
+#todo:
 class CategoryPage(BaseRequestHandler):
     def get(self, author, cat_name):
         if user_id and cat_slug:
@@ -252,8 +288,10 @@ class CategoryPage(BaseRequestHandler):
             'category': category,
             })
 
+#todo: (finish userprofilepage first, use it as an example) 
 class AuthorPage(BaseRequestHandler):
     def get(self, user_id):
+        # dont display edit link on author pages
         if user_id:
             author = Author.get_by_key_name(user_id)
             categories = author.categories.fetch(100)
@@ -275,29 +313,38 @@ class UserProfilePage(BaseRequestHandler):
 
         if not user:
             errors.append('Please login.')
+        if not errors:
+            author = Author.get_by_key_name(user_id)
+            if author:
+                categories = author.categories #set max categories/stories?
+                self.generate('author_page.html', {
+                    'author' : author,
+                    'categories': categories,
+                    })
+            else:
+                self.generate('author_page.html')
+        else:
             self.generate('author_page.html', {
                 'errors' : errors,
                 })
-        else:
-            author = Author.get_by_key_name(user_id)
-            categories = author.categories #set max num of stories/categories?
 
-        self.generate('author_page.html', {
-            'author' : author,
-            'categories': categories,
-            })
 
 class SingleStoryPage(BaseRequestHandler):
     def get(self, slug):
+        # all incoming urls should be made lowercase
         story = Story.get_by_key_name(slug.lower())
+        errors = []
         
         if not story:
-            self.error(404)
-            return
-            
-        self.generate('single_story.html', {
-            'story': story,
-            })
+            errors.append("This story does not exist.")
+        if not errors:        
+            self.generate('single_story.html', {
+                'story': story,
+                })
+        else:
+            self.generate('single_story.html', {
+                'errors': errors,
+                })
 
   
 application = webapp.WSGIApplication(

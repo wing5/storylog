@@ -8,7 +8,7 @@
 {% block content %}
 
 <ol class="userStories">
-{% if categories %}
+{% if author %}
 {% for category in categories %}
 <h1>{{ category.name }}</h1>
 {% for story in category.stories %}
@@ -20,7 +20,7 @@
 {% endfor %}
 {% endfor %}
 {% else %}
-<p><a href="/Create">Write a story!</a></p>
+<p><a href="/Share">Write a story!</a></p>
 {% endif %}
 </ol>
 

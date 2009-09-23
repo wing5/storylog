@@ -24,7 +24,7 @@
 	    <h1 class="pageTitle">
           {% block page_title %}
 	      <a href="/{{ story.slug|title }}">
-	        {{ story.title|striptags|escape }}
+	        {{ story.title|title }}
 	      </a>
 	      {% endblock page_title %}
 	    </h1>

@@ -5,7 +5,6 @@
 {% block page_title %}EMPTY FORM PAGE TITLE{% endblock %}
 
 {% block content %}
-{% if not errors %}
     <form class="storyForm" action="{% block form_action %}/error{% endblock %}" method="post">
       {% block hidden_story_key %}{% endblock %}
       <label for="storyTitle">Story Title: </label>
@@ -24,5 +23,5 @@
         <input type="submit" value="{% block input_button %}EMPTY BUTTON{% endblock %}">
       </div>
     </form>
-{% endif %}
 {% endblock content %}
+ 

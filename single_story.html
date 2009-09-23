@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ story.title }} - {% endblock %}
+{% block title %}{{ story.title|title }} - {% endblock %}
 
 {% comment %} non-linked page title: {% endcomment %}
-{% block page_title %}{{ story.title }}{% endblock %}
+{% block page_title %}{{ story.title|title }}{% endblock %}
