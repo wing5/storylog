@@ -2,7 +2,7 @@
 
 {% block title %}{{ author.name }} | {% endblock %}
 
-{% block page_title %}{{ author.name }}{% endblock %}
+{% block page_title %}{{ author.name or user.nickname }}{% endblock %}
 
 
 {% block content %}

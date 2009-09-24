@@ -117,6 +117,7 @@ class CreateStoryPage(BaseRequestHandler):
         self.generate('create_story.html')
 
 class CreateStoryAction(BaseRequestHandler):
+    #Author created here or w/ EditNicknameAction or w/ FavoriteStoryAction
     def post(self):
         user = users.get_current_user()
         user_id = user.user_id()
