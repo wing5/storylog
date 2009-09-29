@@ -1,0 +1,20 @@
+{% extends "author_page.html" %}
+
+{% block content %}
+<ol class="userStories">
+{% if author %}
+<h1>{{ category.name }}</h1>
+{% for story in category.stories %}
+<li>
+<a href="/{{ story.key.name|title }}">{{ story.title|escape|title }}</a>
+  {% ifequal author.key.name user.user_id %}
+  <br />
+  (<a href="/Edit/{{ story.key.name|title }}">edit</a>)
+  {% endifequal %}
+</li>
+{% endfor %}
+{% else %}
+<p><a href="/Share">Write a story!</a></p>
+{% endif %}
+</ol>
+{% endblock %}

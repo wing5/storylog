@@ -1,27 +1,27 @@
 {% extends "base.html" %}
 
+{% if not errors %}
 {% block title %}{{ author.name }} | {% endblock %}
-
-{% block page_title %}{{ author.name or user.nickname }}{% endblock %}
-
+{% block page_title %}{{ author.name }}{% endblock %}
+{% endif %}
 
 {% block content %}
-
 <ol class="userStories">
 {% if author %}
 {% for category in categories %}
-<h1>{{ category.name }}</h1>
+<h1><a href="/Author/{{ user.user_id }}/Category/{{ category.slug|title }}">{{ category.name }}</a></h1>
 {% for story in category.stories %}
 <li>
 <a href="/{{ story.key.name|title }}">{{ story.title|escape|title }}</a>
-<br />
-(<a href="/Edit/{{ story.key.name|title }}">edit</a>)
+  {% ifequal author.key.name user.user_id %}
+  <br />
+  | <a href="/Edit/{{ story.key.name|title }}">edit</a> | <a href="/Delete/{{ story.key.name|title }}">delete</a>
+  {% endifequal %}
 </li>
 {% endfor %}
 {% endfor %}
 {% else %}
-<p><a href="/Share">Write a story!</a></p>
+<p><a href="/Share">Write a story!</a></p>|||dispays on errors
 {% endif %}
 </ol>
-
 {% endblock content %}

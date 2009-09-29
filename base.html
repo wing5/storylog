@@ -23,7 +23,7 @@
       
 	    <h1 class="pageTitle">
           {% block page_title %}
-	      <a href="/{{ story.slug|title }}">
+	      <a href="/{{ story.key.name|title }}">
 	        {{ story.title|title }}
 	      </a>
 	      {% endblock page_title %}

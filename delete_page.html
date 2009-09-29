@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% if not errors %}
+{% block title %}Confirm story deletion | {% endblock %}
+{% block page_title %}Confirm story deletion:{% endblock %}
+{% endif %}
+
+{% block content %}
+{% if story %}
+<h1>Are you sure you want to delete the story <strong>{{ story.title|title }}</strong>?</h1>
+<form action="/deletestory.do" method="post">
+  <input type="hidden" name="story_key" value="{{ story.key }}" />
+  <input type="submit" value="Delete Story" />
+</form>
+{% endif %}
+<a href="/You">Go Back</a>
+{% endblock content %}

@@ -12,6 +12,7 @@ from google.appengine.ext import db
 class Author(db.Model):
     name = db.StringProperty(required=True,indexed=False)
     user = db.UserProperty(required=True,auto_current_user_add=True)
+    favorites = db.ListProperty(db.Key) #implement
 
     def __init__(self, *args, **kwds):
         """Assigns a given user's id as the author's key name.
@@ -117,7 +118,7 @@ class CreateStoryPage(BaseRequestHandler):
         self.generate('create_story.html')
 
 class CreateStoryAction(BaseRequestHandler):
-    #Author created here or w/ EditNicknameAction or w/ FavoriteStoryAction
+    #Author created here or w/ EditNicknameAction or w/ Favorite
     def post(self):
         user = users.get_current_user()
         user_id = user.user_id()
@@ -198,12 +199,53 @@ class EditStoryPage(BaseRequestHandler):
                 'content': content,
                 'category_name': category_name,
                 })
+        else:
+            self.generate('edit_story.html', {
+                'errors': errors,
+                })
 
-        self.generate('edit_story.html', {
-            'errors': errors,
-            })
+class DeleteStoryPage(BaseRequestHandler):
+    @login_required
+    def get(self, slug):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        story = Story.get_by_key_name(slug.lower())
+        errors = []
 
-        
+        if not user or not story or not story.user_has_access(user):
+            errors.append("You cannot delete this story.")
+        if not errors:
+            self.generate('delete_page.html', {
+                'story': story,
+                })
+        else:
+            self.generate('delete_page.html', {
+                'errors': errors,
+                })
+
+
+class DeleteStoryAction(BaseRequestHandler):
+    #make a delete category action
+    def post(self):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        author = Author.get_by_key_name(user_id)
+        story_key = self.request.get('story_key')
+        story = Story.get(story_key)
+        errors = []
+
+        if not author or not story or not story.user_has_access(user):
+            errors.append("You cannot delete this story.")
+        if not errors:
+            story_category = story.category
+            story.delete()
+            Category.remove_if_empty(author, story_category)
+            self.redirect('/You')
+        else:
+            self.generate('author_page.html', {
+                'errors': errors,
+                })
+            
 
 class EditStoryAction(BaseRequestHandler):
     def post(self):
@@ -212,7 +254,7 @@ class EditStoryAction(BaseRequestHandler):
         story_key = self.request.get('story')
         story = Story.get(story_key)
         title = cleanup(self.request.get('title'))
-        slug = Story.make_unique_slug(title) # is this db call necessary before error display?
+        slug = Story.make_unique_slug(title) # this db call necessary here
         
         errors = []
 
@@ -267,43 +309,53 @@ class EditStoryAction(BaseRequestHandler):
             Category.remove_if_empty(author, old_category)
             #all outgoing urls should be in title format
             self.redirect('/%s' % (story.key().name().title())) 
-
-        self.generate('edit_story.html', {
-            'errors': errors,
-            'title': self.request.get('title'),
-            'content': self.request.get('content'),
-            'category_name': self.request.get('category_name'),
-            })
+        else:
+            self.generate('edit_story.html', {
+                'errors': errors,
+                'title': self.request.get('title'),
+                'content': self.request.get('content'),
+                'category_name': self.request.get('category_name'),
+                })
 
 #todo:
 class CategoryPage(BaseRequestHandler):
-    def get(self, author, cat_name):
-        if user_id and cat_slug:
-            author = Author.get_by_key_name(user_id)
-            category = author.categories.filter('slug =', cat_slug).get()
+    def get(self, user_id, cat_slug):
+        author = Author.get_by_key_name(user_id)
+        category = Category.get_by_key_name(user_id + cat_slug.lower())
+        errors = []
+
+        if not author:
+            errors.append("This is not a valid Author page. Sorry.")
+        if not category:
+            errors.append("This is not a valid Category page. Sorry.")
+        if not errors:
+            self.generate('category_page.html', {
+                'author': author,
+                'category': category,
+                })
         else:
-            self.error(404)
-            return
+            self.generate('category_page.html', {
+                'errors': errors,
+                })
 
-        self.generate('category_page.html', {
-            'category': category,
-            })
-
-#todo: (finish userprofilepage first, use it as an example) 
 class AuthorPage(BaseRequestHandler):
     def get(self, user_id):
         # dont display edit link on author pages
-        if user_id:
-            author = Author.get_by_key_name(user_id)
-            categories = author.categories.fetch(100)
+        author = Author.get_by_key_name(user_id)
+        errors = []
+        
+        if not author:
+            errors.append("This is not a valid author page. Sorry.")
+        if not errors:
+            categories = author.categories
+            self.generate('author_page.html', {
+                'author': author,
+                'categories': categories,
+                })
         else:
-            self.error(404)
-            return
-
-        self.generate('author_page.html', {
-            'author': author,
-            'categories': categories,
-            })
+            self.generate('author_page.html', {
+                'errors': errors,
+                })
 
 class UserProfilePage(BaseRequestHandler):
     @login_required
@@ -319,14 +371,15 @@ class UserProfilePage(BaseRequestHandler):
             if author:
                 categories = author.categories #set max categories/stories?
                 self.generate('author_page.html', {
-                    'author' : author,
+                    'author': author,
                     'categories': categories,
                     })
             else:
+                #display the page even if user hasn't created a story yet
                 self.generate('author_page.html')
         else:
             self.generate('author_page.html', {
-                'errors' : errors,
+                'errors': errors,
                 })
 
 
@@ -350,14 +403,16 @@ class SingleStoryPage(BaseRequestHandler):
   
 application = webapp.WSGIApplication(
     [('/', MainPage),
-     ('/You', UserProfilePage),
-     ('/Share', CreateStoryPage),
+     ('(?i)/You', UserProfilePage),
+     ('(?i)/Share', CreateStoryPage),
      ('/createstory.do', CreateStoryAction),
      ('/editstory.do', EditStoryAction),
-     (r'/Edit/([^/]+)', EditStoryPage),
-     (r'/Author/([^/]+)/Category/([^/]+)', CategoryPage),
-     (r'/Author/([^/]+)', AuthorPage),
-     (r'/([^/]+)', SingleStoryPage)],
+     ('(?i)/Edit/([^/]+)', EditStoryPage),
+     ('(?i)/Delete/([^/]+)', DeleteStoryPage),
+     ('/deletestory.do', DeleteStoryAction),
+     ('(?i)/Author/([^/]+)/Category/([^/]+)', CategoryPage),
+     ('(?i)/Author/([^/]+)', AuthorPage),
+     ('/([^/]+)', SingleStoryPage)],
     debug=True)
 
 def main():
