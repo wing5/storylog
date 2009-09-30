@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
 	  "http://www.w3.org/TR/html4/strict.dtd">
 
-<html>
+<html lang="en">
   <head>
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
     <title>{% block title %}{% endblock %}Storylog</title>
@@ -18,20 +18,18 @@
   <body>
 
     <div class="container">
-
       <div class="header">
-      
-	    <h1 class="pageTitle">
-          {% block page_title %}
-	      <a href="/{{ story.key.name|title }}">
-	        {{ story.title|title }}
-	      </a>
-	      {% endblock page_title %}
-	    </h1>
-    
-      </div>{# end header div #}
 
-      <div class="content">
+	    <h2>TRUE STORIES AT STORYLOG
+	      <ul class="nav">
+	        <li><a href="/">reload</a></li>
+            {% if user %}
+	        <li><a href="/You">you</a></li>
+	        <li><a href="/Share">share</a></li>
+            {% endif %}
+	        <li><a href="{{ url }}">{{ url_linktext }}</a></li>
+	      </ul>
+	    </h2>
 
         {% if errors %}
         <ul class="error_box">
@@ -40,38 +38,30 @@
           {% endfor %}
         </ul>
         {% endif %}
-    
-	    {% block content %}
-	    <div class="storyContent">
-	      {{ story.content|linebreaks }}
-	    </div>
-	    <div class="storyAuthor">
-	      <a href="Author/{{ story.author.key.name }}">{{ story.author.name }}</a>
-	    </div>
-	    {% endblock content %}
-        
-      </div>{# end content div #}
 
-      <div class="sidebar">
-	<ul class="nav">
-	  {% block nav %}
-	  <li class="first"><a href="/">Reload</a>
-	    {% if user %}
-	  <li><a href="/You">Profile</a></li>
-	  <li><a href="/Share">Share</a></li>
-	  {% endif %}
-	  <li class="last"><a href="{{ url }}">{{ url_linktext }}</a></li>
-	  {% endblock nav %}
-	</ul>
-      </div>{# end sidebar #}
+	    <h1>
+          {% block page_title %}
+	      <a href="/{{ story.key.name|title }}">
+	        {{ story.title|title }}
+	      </a>
+	      {% endblock %}
+        </h1>
 
-
-
-      <div class="footer">
-	<a href="/about">About Storylog</a>
+      </div>
+      
+      <div class="content">
+        {% block content %}
+        {{ story.content|linebreaks }}
+	    <p class="author"><a href="Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
+        {% endblock %}
       </div>
 
-    </div>{# end container #}
+      <div class="footer">
+        <p>&copy; Storylog | <a href="/About">About &amp; FAQ</a></p>
+      </div>
 
-   </body>
+    </div>
+  
+  </body>
+
 </html>

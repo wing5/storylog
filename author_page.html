@@ -12,7 +12,7 @@ No author
 {% if not errors %}
 {{ author.name }}
   {% ifequal author.key.name user.user_id %}
- | <a href="/EditAuthor">edit</a>
+<div class="edit_name"><a href="/EditAuthor">[change your name]</a></div>
   {% endifequal %}
 {% else %}
 Author is none.
@@ -22,22 +22,22 @@ Author is none.
 {% block content %}
 {% spaceless %}
 
-<ol class="userStories">
+<ul class="story_list">
   {% if author %}
     {% for category in categories %}
       {% if category.name %}
-      <h1>
-        <a href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">{{ category.name }}</a>
-        {% ifequal author.key.name user.user_id %} | <a href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">delete</a>
+      <h2>
+        <a class="category_name" href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">{{ category.name }}</a>
+        {% ifequal author.key.name user.user_id %}<a class="action" href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">[delete]</a>
         {% endifequal %}
-      </h1>  
+      </h2>  
       {% endif %}
 
       {% for story in category.stories %}
       <li>
-        <a href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+        <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
         {% ifequal author.key.name user.user_id %}
-        <br /> | <a href="/Edit/{{ story.key.name|title }}">edit</a> | <a href="/Delete/{{ story.key.name|title }}">delete</a>
+        <a class="action" href="/Edit/{{ story.key.name|title }}">[edit]</a> <a class="action" href="/Delete/{{ story.key.name|title }}">[delete]</a>
         {% endifequal %}
       </li>
       {% endfor %}
@@ -47,7 +47,7 @@ Author is none.
     <p><a href="/Share">Write a story!</a></p>
     {% endif %}
   {% endif %}
-</ol>
+</ul>
 
 {% endspaceless %}
 {% endblock content %}

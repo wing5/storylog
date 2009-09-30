@@ -132,16 +132,18 @@ class CreateStoryAction(BaseRequestHandler):
         user = users.get_current_user()
         user_id = user.user_id()
         title = cleanup(self.request.get('title'))
-        slug = Story.make_unique_slug(title)
+        if title:
+            slug = Story.make_unique_slug(title) # sorta expensive db call
         
         errors = []
 
         if not title:
             errors.append('Please enter a title.')
+        else:
+            if slug == ' error ':
+                errors.append("Please change your story's title. Exactly six other people have already chosen a very similar title.")
         if not self.request.get('content'):
             errors.append('Please enter a story.')
-        if slug == ' error ':
-            errors.append("Please change your story's title. Exactly six other people have already chosen a very similar title.")
         if not errors:
             author = Author.get_by_key_name(user_id)
             if not author:
@@ -224,7 +226,8 @@ class EditStoryAction(BaseRequestHandler):
         story_key = self.request.get('story')
         story = Story.get(story_key)
         title = cleanup(self.request.get('title'))
-        slug = Story.make_unique_slug(title) # sorta expensive db call
+        if title:
+            slug = Story.make_unique_slug(title) # sorta expensive db call
         
         errors = []
 
