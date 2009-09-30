@@ -1,20 +1,37 @@
 {% extends "author_page.html" %}
 
+{% comment %}
+The only differences between this page and the author page:
+** No for loop over categories
+** The category name isn't linked to the category's page
+{% endcomment %} 
+
 {% block content %}
+{% spaceless %}
+
 <ol class="userStories">
-{% if author %}
-<h1>{{ category.name }}</h1>
-{% for story in category.stories %}
-<li>
-<a href="/{{ story.key.name|title }}">{{ story.title|escape|title }}</a>
-  {% ifequal author.key.name user.user_id %}
-  <br />
-  (<a href="/Edit/{{ story.key.name|title }}">edit</a>)
-  {% endifequal %}
-</li>
-{% endfor %}
-{% else %}
-<p><a href="/Share">Write a story!</a></p>
-{% endif %}
+  {% if author %}
+      {% if category.name %}
+      <h1>{{ category.name }}
+        {% ifequal author.key.name user.user_id %} | <a href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">delete</a>
+        {% endifequal %}
+      </h1>  
+      {% endif %}
+
+      {% for story in category.stories %}
+      <li>
+        <a href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+        {% ifequal author.key.name user.user_id %}
+        <br /> | <a href="/Edit/{{ story.key.name|title }}">edit</a> | <a href="/Delete/{{ story.key.name|title }}">delete</a>
+        {% endifequal %}
+      </li>
+      {% endfor %}
+  {% else %}
+    {% if not errors %}
+    <p><a href="/Share">Write a story!</a></p>
+    {% endif %}
+  {% endif %}
 </ol>
-{% endblock %}
+
+{% endspaceless %}
+{% endblock content %}

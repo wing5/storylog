@@ -1,17 +1,29 @@
 {% extends "base.html" %}
 
-{% if not errors %}
-{% block title %}Confirm story deletion | {% endblock %}
-{% block page_title %}Confirm story deletion:{% endblock %}
-{% endif %}
+{% block title %}Confirm 
+{% if story %}story{% endif %}
+{% if category %}category{% endif %}
+ deletion | {% endblock %}
+{% block page_title %}Confirm 
+{% if story %}story{% endif %}
+{% if category %}category{% endif %}
+ deletion:{% endblock %}
 
 {% block content %}
-{% if story %}
-<h1>Are you sure you want to delete the story <strong>{{ story.title|title }}</strong>?</h1>
+{% if story or category %}
+<h1>Are you sure you want to delete the
+{% if story %} story <strong>{{ story.title|title }}</strong>?</h1>
 <form action="/deletestory.do" method="post">
   <input type="hidden" name="story_key" value="{{ story.key }}" />
   <input type="submit" value="Delete Story" />
 </form>
+{% endif %}
+{% if category %} category <strong>{{ category.name|title }}</strong>?</h1>
+<form action="/deletecategory.do" method="post">
+  <input type="hidden" name="category_key" value="{{ category.key }}" />
+  <input type="submit" value="Delete Category" />
+</form>
+{% endif %}
 {% endif %}
 <a href="/You">Go Back</a>
 {% endblock content %}

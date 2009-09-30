@@ -1,27 +1,53 @@
 {% extends "base.html" %}
 
+{% block title %}
 {% if not errors %}
-{% block title %}{{ author.name }} | {% endblock %}
-{% block page_title %}{{ author.name }}{% endblock %}
+{{ author.name }}
+{% else %}
+No author
+{% endif %} | 
+{% endblock %}
+
+{% block page_title %}
+{% if not errors %}
+{{ author.name }}
+  {% ifequal author.key.name user.user_id %}
+ | <a href="/EditAuthor">edit</a>
+  {% endifequal %}
+{% else %}
+Author is none.
 {% endif %}
+{% endblock %}
 
 {% block content %}
+{% spaceless %}
+
 <ol class="userStories">
-{% if author %}
-{% for category in categories %}
-<h1><a href="/Author/{{ user.user_id }}/Category/{{ category.slug|title }}">{{ category.name }}</a></h1>
-{% for story in category.stories %}
-<li>
-<a href="/{{ story.key.name|title }}">{{ story.title|escape|title }}</a>
-  {% ifequal author.key.name user.user_id %}
-  <br />
-  | <a href="/Edit/{{ story.key.name|title }}">edit</a> | <a href="/Delete/{{ story.key.name|title }}">delete</a>
-  {% endifequal %}
-</li>
-{% endfor %}
-{% endfor %}
-{% else %}
-<p><a href="/Share">Write a story!</a></p>|||dispays on errors
-{% endif %}
+  {% if author %}
+    {% for category in categories %}
+      {% if category.name %}
+      <h1>
+        <a href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">{{ category.name }}</a>
+        {% ifequal author.key.name user.user_id %} | <a href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">delete</a>
+        {% endifequal %}
+      </h1>  
+      {% endif %}
+
+      {% for story in category.stories %}
+      <li>
+        <a href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+        {% ifequal author.key.name user.user_id %}
+        <br /> | <a href="/Edit/{{ story.key.name|title }}">edit</a> | <a href="/Delete/{{ story.key.name|title }}">delete</a>
+        {% endifequal %}
+      </li>
+      {% endfor %}
+    {% endfor %}
+  {% else %}
+    {% if not errors %}
+    <p><a href="/Share">Write a story!</a></p>
+    {% endif %}
+  {% endif %}
 </ol>
+
+{% endspaceless %}
 {% endblock content %}

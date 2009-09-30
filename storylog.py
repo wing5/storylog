@@ -11,16 +11,17 @@ from google.appengine.ext import db
 
 class Author(db.Model):
     name = db.StringProperty(required=True,indexed=False)
-    user = db.UserProperty(required=True,auto_current_user_add=True)
+    user = db.UserProperty(required=True)
     favorites = db.ListProperty(db.Key) #implement
 
     def __init__(self, *args, **kwds):
         """Assigns a given user's id as the author's key name.
         Assigns a given user's nickname as the author's name.
         """
-        kwds['key_name'] = kwds['user'].user_id()
-        kwds['name'] = kwds['user'].nickname().split('@')[0]
         db.Model.__init__(self, *args, **kwds)
+
+    def user_has_access(self, user):
+        return user.user_id() == self.key().name()
 
 class Category(db.Model): 
     author = db.ReferenceProperty(Author,
@@ -32,6 +33,13 @@ class Category(db.Model):
     def remove_if_empty(author, category):
         if not category.stories.filter('author =', author).get():
             category.delete()
+
+    def user_has_access(self, user):
+        """get_value_for_datastore returns the author's key
+        without a db lookup
+        alternate: ...== self.author.key().name()
+        """
+        return user.user_id() == Category.author.get_value_for_datastore(self).name()
 
 
 class Story(db.Model):
@@ -83,8 +91,9 @@ class Story(db.Model):
             return ' error '
 
     def user_has_access(self, user):
-        #get_value_for_datastore returns the author's key without a db lookup
-        #alternate: ...== story.author.key().name()
+        """get_value_for_datastore returns the author's key without a db lookup
+        alternate: ...== self.author.key().name()
+        """
         return user.user_id() == Story.author.get_value_for_datastore(self).name()
     
 class BaseRequestHandler(webapp.RequestHandler):    
@@ -132,11 +141,15 @@ class CreateStoryAction(BaseRequestHandler):
         if not self.request.get('content'):
             errors.append('Please enter a story.')
         if slug == ' error ':
-            errors.append("Please change your story's title. Six other people have chosen a very similar title.")
+            errors.append("Please change your story's title. Exactly six other people have already chosen a very similar title.")
         if not errors:
             author = Author.get_by_key_name(user_id)
             if not author:
-                author = Author(user=user)
+                nickname = user.nickname().split('@')[0]
+                author = Author(
+                    key_name = user_id,
+                    user = user,
+                    name = nickname)
                 author.put()
 
             category_name = cleanup(self.request.get('category_name'))
@@ -204,49 +217,6 @@ class EditStoryPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
-class DeleteStoryPage(BaseRequestHandler):
-    @login_required
-    def get(self, slug):
-        user = users.get_current_user()
-        user_id = user.user_id()
-        story = Story.get_by_key_name(slug.lower())
-        errors = []
-
-        if not user or not story or not story.user_has_access(user):
-            errors.append("You cannot delete this story.")
-        if not errors:
-            self.generate('delete_page.html', {
-                'story': story,
-                })
-        else:
-            self.generate('delete_page.html', {
-                'errors': errors,
-                })
-
-
-class DeleteStoryAction(BaseRequestHandler):
-    #make a delete category action
-    def post(self):
-        user = users.get_current_user()
-        user_id = user.user_id()
-        author = Author.get_by_key_name(user_id)
-        story_key = self.request.get('story_key')
-        story = Story.get(story_key)
-        errors = []
-
-        if not author or not story or not story.user_has_access(user):
-            errors.append("You cannot delete this story.")
-        if not errors:
-            story_category = story.category
-            story.delete()
-            Category.remove_if_empty(author, story_category)
-            self.redirect('/You')
-        else:
-            self.generate('author_page.html', {
-                'errors': errors,
-                })
-            
-
 class EditStoryAction(BaseRequestHandler):
     def post(self):
         user = users.get_current_user()
@@ -254,13 +224,13 @@ class EditStoryAction(BaseRequestHandler):
         story_key = self.request.get('story')
         story = Story.get(story_key)
         title = cleanup(self.request.get('title'))
-        slug = Story.make_unique_slug(title) # this db call necessary here
+        slug = Story.make_unique_slug(title) # sorta expensive db call
         
         errors = []
 
         if not user or not story or not story.user_has_access(user):
             errors.append("You cannot edit this story.")
-        if not self.request.get('title'):
+        if not title:
             errors.append('Please enter a title.')
         if not self.request.get('content'):
             errors.append('Please enter a story.')
@@ -317,7 +287,92 @@ class EditStoryAction(BaseRequestHandler):
                 'category_name': self.request.get('category_name'),
                 })
 
-#todo:
+class DeleteStoryPage(BaseRequestHandler):
+    @login_required
+    def get(self, slug):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        story = Story.get_by_key_name(slug.lower())
+        errors = []
+
+        if not user or not story or not story.user_has_access(user):
+            errors.append("You cannot delete this story.")
+        if not errors:
+            self.generate('delete_page.html', {
+                'story': story,
+                })
+        else:
+            self.generate('delete_page.html', {
+                'errors': errors,
+                })
+
+class DeleteStoryAction(BaseRequestHandler):
+    def post(self):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        author = Author.get_by_key_name(user_id)
+        story = Story.get(self.request.get('story_key'))
+        errors = []
+
+        if not author or not story or not story.user_has_access(user):
+            errors.append("You cannot delete this story.")
+        if not errors:
+            story_category = story.category
+            story.delete()
+            Category.remove_if_empty(author, story_category)
+            self.redirect('/You')
+        else:
+            self.generate('delete_page.html', {
+                'errors': errors,
+                })
+
+class DeleteCategoryPage(BaseRequestHandler):
+    @login_required
+    def get(self, user_id, cat_slug):
+        user = users.get_current_user()
+        category = Category.get_by_key_name(user_id + cat_slug.lower())
+        errors = []
+
+        if not user or not category or not category.user_has_access(user):
+            errors.append("You cannot delete this category.")
+        if not errors:
+            self.generate('delete_page.html', {
+                'category': category,
+                })
+        else:
+            self.generate('delete_page.html', {
+                'errors': errors,
+                })
+
+class DeleteCategoryAction(BaseRequestHandler):
+    def post(self):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        category = Category.get(self.request.get('category_key'))
+        author = Author.get_by_key_name(user_id)
+        errors = []
+
+        if not author or not category or not category.user_has_access(user):
+            errors.append("You cannot delete this category.")
+        if not errors:
+            empty_cat = Category.get_by_key_name(user_id)
+            if not empty_cat:
+                empty_cat = Category(
+                    key_name = user_id,
+                    author = author,
+                    )
+                empty_cat.put()
+            stories = author.stories.filter('category =', category.key())
+            for story in stories:
+                story.category = empty_cat
+                story.put()
+            category.delete()
+            self.redirect('/You')
+        else:
+            self.generate('delete_page.html', {
+                'errors': errors,
+                })
+
 class CategoryPage(BaseRequestHandler):
     def get(self, user_id, cat_slug):
         author = Author.get_by_key_name(user_id)
@@ -340,7 +395,6 @@ class CategoryPage(BaseRequestHandler):
 
 class AuthorPage(BaseRequestHandler):
     def get(self, user_id):
-        # dont display edit link on author pages
         author = Author.get_by_key_name(user_id)
         errors = []
         
@@ -354,6 +408,44 @@ class AuthorPage(BaseRequestHandler):
                 })
         else:
             self.generate('author_page.html', {
+                'errors': errors,
+                })
+            
+class EditAuthorPage(BaseRequestHandler):
+    @login_required
+    def get(self):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        author = Author.get_by_key_name(user_id)
+        if not author:
+            nickname = user.nickname().split('@')[0]
+            author = Author(
+                Key_name = user_id,
+                user = user,
+                name = nickname)
+            author.put()
+        self.generate('edit_author.html', {
+            'author': author,
+            })
+
+class EditAuthorAction(BaseRequestHandler):
+    def post(self):
+        user = users.get_current_user()
+        author = Author.get(self.request.get('author_key'))
+        new_name = cleanup(self.request.get('author_name'))
+        errors = []
+
+        if not new_name:
+            errors.append('Please enter a nickname.')
+        if not author or not  author.user_has_access(user):
+            errors.append('You cannot edit this nickname. Sorry.')
+        if not errors:
+            author.name = new_name
+            author.put()
+            self.redirect('/You')
+        else:
+            self.generate('edit_author.html', {
+                'author': author,
                 'errors': errors,
                 })
 
@@ -400,7 +492,8 @@ class SingleStoryPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
-  
+# be careful if you want to rearrange the pages: make sure the urls
+# with the broader matches go toward the bottom
 application = webapp.WSGIApplication(
     [('/', MainPage),
      ('(?i)/You', UserProfilePage),
@@ -410,8 +503,12 @@ application = webapp.WSGIApplication(
      ('(?i)/Edit/([^/]+)', EditStoryPage),
      ('(?i)/Delete/([^/]+)', DeleteStoryPage),
      ('/deletestory.do', DeleteStoryAction),
+     ('(?i)/DeleteCategory/([^/]+)/([^/]+)', DeleteCategoryPage),
+     ('/deletecategory.do', DeleteCategoryAction),
      ('(?i)/Author/([^/]+)/Category/([^/]+)', CategoryPage),
      ('(?i)/Author/([^/]+)', AuthorPage),
+     ('(?i)/EditAuthor', EditAuthorPage),
+     ('/editauthor.do', EditAuthorAction),
      ('/([^/]+)', SingleStoryPage)],
     debug=True)
 

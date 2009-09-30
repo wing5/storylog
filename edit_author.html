@@ -1,0 +1,12 @@
+{% extends "author_page.html" %}
+
+{% block page_title %}Edit Nickname:{% endblock %}
+
+{% block content %}
+<form action="/editauthor.do" method="post">
+  <input type="hidden" name="author_key" value="{{ author.key }}" />
+  <label for="nickname">Your Nickname:</label><br />
+  <input class="title" type="text" id="nickname" name="author_name" maxlength="30" value="{{ author.name }}" />
+  <input type="submit" value="Save Nickname">
+</form>
+{% endblock %}

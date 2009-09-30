@@ -9,7 +9,7 @@
       {% block hidden_story_key %}{% endblock %}
       <label for="storyTitle">Story Title: </label>
       <br />
-      <input class="title" type="text" id="storyTitle" name="title" maxlength="55" value="{{ title }}" />
+      <input class="title" type="text" id="storyTitle" name="title" maxlength="100" value="{{ title }}" />
       <br /><br />
       <label for="storyContent">Story Text (no html code plz): </label>
       <div>
@@ -17,7 +17,7 @@
       </div>
       <label for="storyCategory">Category: </label>
       <br />
-      <input class="title" type="text" id="storyCategory" name="category_name" maxlength="55" value="{{ category_name }}" />
+      <input class="title" type="text" id="storyCategory" name="category_name" maxlength="100" value="{{ category_name }}" />
       <br />
       <div>
         <input type="submit" value="{% block input_button %}EMPTY BUTTON{% endblock %}">

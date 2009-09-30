@@ -43,7 +43,7 @@
     
 	    {% block content %}
 	    <div class="storyContent">
-	      {{ story.content|escape|linebreaks }}
+	      {{ story.content|linebreaks }}
 	    </div>
 	    <div class="storyAuthor">
 	      <a href="Author/{{ story.author.key.name }}">{{ story.author.name }}</a>
