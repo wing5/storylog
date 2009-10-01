@@ -61,11 +61,12 @@ body a:active { top: 1px; }
 .header h2 a.header_title { color: #888; }
 .header h2 a.header_title:hover { color: #555; }
 .header h1 { font-size: 1.2em; font-weight: bold; margin-left: 5px; }
-.header h1 a { color: #333; text-decoration: none; }
+.header h1 a { display: block; color: #333; text-decoration: none; }
 .header h1 a:hover { color: #930; }
-.header h1 .edit_name { font-size: 60%; float: right; }
-.header h1 .edit_name a { color: #666; }
-.header h1 .edit_name a:hover { color: #009; }
+.header h1 a:hover .page_title_action { color: #930; }
+.header h1 .page_title_action { color: #666; font-size: 60%; float: right; }
+.header h1 .page_title_action a { color: #666; }
+.header h1 .page_title_action a:hover { color: #930; }
 .header ul.error_box { padding: 10px 10px 10px 30px; font-size: 90%; background-color: #fff; margin-bottom: 1em; border: 1px solid #ccc; color: #993300; }
 
 .content { margin-top: 1em; margin-bottom: 1em; }

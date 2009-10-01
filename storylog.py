@@ -116,7 +116,7 @@ class BaseRequestHandler(webapp.RequestHandler):
 
 class MainPage(BaseRequestHandler):
     def get(self):
-        story = Story.all().filter('rand_id >', random()).get()
+        story = Story.all().order('rand_id').filter('rand_id >', random()).get()
     
         self.generate('base_story_page.html', {
             'story': story,})
@@ -127,21 +127,28 @@ class CreateStoryPage(BaseRequestHandler):
         self.generate('create_story.html')
 
 class CreateStoryAction(BaseRequestHandler):
-    #Author created here or w/ EditNicknameAction or w/ Favorite
+    #Author created here or w/ EditAuthorAction or w/ FavoriteAction
     def post(self):
         user = users.get_current_user()
         user_id = user.user_id()
         title = cleanup(self.request.get('title'))
+        category_name = cleanup(self.request.get('category_name'))
         if title:
-            slug = Story.make_unique_slug(title) # sorta expensive db call
+            slug = Story.make_unique_slug(title)
         
         errors = []
 
         if not title:
             errors.append('Please enter a title.')
         else:
+            #if there's no title, there's no slug
             if slug == ' error ':
                 errors.append("Please change your story's title. Exactly six other people have already chosen a very similar title.")
+            if not len(title) < 36:
+                errors.append('Please enter a title with 35 letters or less.')
+        if category_name:
+            if not len(category_name) < 36:
+                errors.append('Please enter a category name with 35 letters or less.')
         if not self.request.get('content'):
             errors.append('Please enter a story.')
         if not errors:
@@ -154,7 +161,6 @@ class CreateStoryAction(BaseRequestHandler):
                     name = nickname)
                 author.put()
 
-            category_name = cleanup(self.request.get('category_name'))
             category_slug = slugify(category_name)
             category = Category.get_by_key_name(user_id + category_slug)
             if not category:
@@ -226,8 +232,11 @@ class EditStoryAction(BaseRequestHandler):
         story_key = self.request.get('story')
         story = Story.get(story_key)
         title = cleanup(self.request.get('title'))
-        if title:
-            slug = Story.make_unique_slug(title) # sorta expensive db call
+        category_name = cleanup(self.request.get('category_name'))
+        slug = ''
+        #you don't want to search for a new slug if you're using the same title
+        if title and story.title != title:
+            slug = Story.make_unique_slug(title)
         
         errors = []
 
@@ -235,10 +244,16 @@ class EditStoryAction(BaseRequestHandler):
             errors.append("You cannot edit this story.")
         if not title:
             errors.append('Please enter a title.')
+        else:
+            if slug == ' error ':
+                errors.append("Please change your story's title. Six other people have already chosen a very similar title.")
+            if not len(title) < 36:
+                errors.append('Please enter a title with 35 letters or less.')
+        if category_name:
+            if not len(category_name) < 36:
+                errors.append('Please enter a category name with 35 letters or less.')
         if not self.request.get('content'):
             errors.append('Please enter a story.')
-        if slug == ' error ':
-            errors.append("Please change your story's title. Six other people have already chosen a very similar title.")
         if not errors:
             content = db.Text(cleanup(self.request.get('content')))
             author = Author.get_by_key_name(user_id)
@@ -246,7 +261,6 @@ class EditStoryAction(BaseRequestHandler):
                 self.error(403)
                 return
 
-            category_name = cleanup(self.request.get('category_name'))
             category_slug = slugify(category_name)            
             category = Category.get_by_key_name(user_id + category_slug)
             old_category = story.category
@@ -285,6 +299,7 @@ class EditStoryAction(BaseRequestHandler):
         else:
             self.generate('edit_story.html', {
                 'errors': errors,
+                'story_key': story_key,
                 'title': self.request.get('title'),
                 'content': self.request.get('content'),
                 'category_name': self.request.get('category_name'),
@@ -441,7 +456,7 @@ class EditAuthorAction(BaseRequestHandler):
         if not new_name:
             errors.append('Please enter a name.')
         if not len(new_name) < 24:
-            errors.append('Please enter a name with 23 characters or less.')
+            errors.append('Please enter a name with 23 letters or less.')
         if not author or not  author.user_has_access(user):
             errors.append("You cannot edit this author's name. Sorry.")
         if not errors:

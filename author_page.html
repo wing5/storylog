@@ -12,7 +12,7 @@ No author
 {% if not errors %}
 {{ author.name }}
   {% ifequal author.key.name user.user_id %}
-<div class="edit_name"><a href="/EditAuthor">[change your name]</a></div>
+<div class="page_title_action"><a href="/EditAuthor">[change your name]</a></div>
   {% endifequal %}
 {% else %}
 Author is none.
