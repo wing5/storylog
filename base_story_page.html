@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block header_title %}TRUE STORIES AT STORYLOG{% endblock %}
+
+{% block page_title %}
+<a href="/{{ story.key.name|title }}">
+  {{ story.title|title }}
+</a>
+{% endblock %}
+
+{% block content %}
+{{ story.content|linebreaks }}{# do i need to use a linebreaks tag here #}
+<p class="author"><a href="/Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
+{% endblock %}

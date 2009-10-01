@@ -4,3 +4,8 @@
 
 {% comment %} non-linked page title: {% endcomment %}
 {% block page_title %}{{ story.title|title }}{% endblock %}
+
+{% block content %}
+{{ story.content|linebreaks }}
+<p class="author"><a href="/Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
+{% endblock %}

@@ -9,20 +9,21 @@ The only differences between this page and the author page:
 {% block content %}
 {% spaceless %}
 
-<ol class="userStories">
+<ul class="story_list">
   {% if author %}
       {% if category.name %}
-      <h1>{{ category.name }}
-        {% ifequal author.key.name user.user_id %} | <a href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">delete</a>
+      <h2>
+        {{ category.name|title }}
+        {% ifequal author.key.name user.user_id %}<a class="action" href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">[delete]</a>
         {% endifequal %}
-      </h1>  
+      </h2>  
       {% endif %}
 
       {% for story in category.stories %}
       <li>
-        <a href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+        <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
         {% ifequal author.key.name user.user_id %}
-        <br /> | <a href="/Edit/{{ story.key.name|title }}">edit</a> | <a href="/Delete/{{ story.key.name|title }}">delete</a>
+        <a class="action" href="/Edit/{{ story.key.name|title }}">[edit]</a> <a class="action" href="/Delete/{{ story.key.name|title }}">[delete]</a>
         {% endifequal %}
       </li>
       {% endfor %}
@@ -31,7 +32,7 @@ The only differences between this page and the author page:
     <p><a href="/Share">Write a story!</a></p>
     {% endif %}
   {% endif %}
-</ol>
+</ul>
 
 {% endspaceless %}
 {% endblock content %}

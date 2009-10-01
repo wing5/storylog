@@ -20,7 +20,7 @@
     <div class="container">
       <div class="header">
 
-	    <h2>TRUE STORIES AT STORYLOG
+	    <h2>{% block header_title %}<a class="header_title" href="/">RETURN TO STORYLOG</a>{% endblock %}
 	      <ul class="nav">
 	        <li><a href="/">reload</a></li>
             {% if user %}
@@ -41,9 +41,7 @@
 
 	    <h1>
           {% block page_title %}
-	      <a href="/{{ story.key.name|title }}">
-	        {{ story.title|title }}
-	      </a>
+          EMPTY PAGE TITLE
 	      {% endblock %}
         </h1>
 
@@ -51,8 +49,7 @@
       
       <div class="content">
         {% block content %}
-        {{ story.content|linebreaks }}
-	    <p class="author"><a href="Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
+        EMPTY CONTENT BLOCK
         {% endblock %}
       </div>
 

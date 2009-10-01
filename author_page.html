@@ -27,7 +27,7 @@ Author is none.
     {% for category in categories %}
       {% if category.name %}
       <h2>
-        <a class="category_name" href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">{{ category.name }}</a>
+        <a class="category_name" href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">{{ category.name|title }}</a>
         {% ifequal author.key.name user.user_id %}<a class="action" href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">[delete]</a>
         {% endifequal %}
       </h2>  

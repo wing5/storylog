@@ -58,6 +58,8 @@ body a:active { top: 1px; }
 .header h2 ul.nav li { list-style-type: none; margin-left: 0px; white-space: nowrap; display: inline; float: left; padding-left: 4px; padding-right: 4px; }
 .header h2 ul.nav li.first { padding-left: 0px; }
 .header h2 ul.nav li.last { padding-right: 0px; }
+.header h2 a.header_title { color: #888; }
+.header h2 a.header_title:hover { color: #555; }
 .header h1 { font-size: 1.2em; font-weight: bold; margin-left: 5px; }
 .header h1 a { color: #333; text-decoration: none; }
 .header h1 a:hover { color: #930; }
@@ -72,8 +74,8 @@ body a:active { top: 1px; }
 .content a.action:hover { color: #00c; }
 .content .author { text-align: right; margin-right: 2em; }
 .content .story_list { list-style: none; }
-.content .story_list li { margin-left: 20px; }
-.content .story_list h2 { margin-top: .5em; }
+.content .story_list li { margin-left: 10px; }
+.content .story_list h2 { margin-left: 7px; margin-top: .5em; }
 .content .story_list h2 a.category_name { color: #930; font-size: 110%; }
 .content .story_form .title { font-family: Georgia; }
 .content .story_form .form_note { float: right; font-size: 90%; padding-right: 30px; color: #666; }

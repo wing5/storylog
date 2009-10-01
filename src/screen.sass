@@ -1,0 +1,124 @@
+// This import applies a global reset to any page that imports this stylesheet.
+@import blueprint/reset.sass
+// To configure blueprint, edit the partials/base.sass file.
+@import partials/base.sass
+// Import all the default blueprint modules so that we can access their mixins.
+@import blueprint
+// horizontal lists
+@import compass/utilities/lists/horizontal_list.sass
+
+//Recommended Blueprint configuration with scoping and semantic layout:
+body
+  // vars: font size
+  +blueprint-typography-body(18px)
+  // add +showgrid
+  +blueprint-debug 
+  // check this out:
+  +blueprint-interaction
+form
+  // adds label, input.title, input.text, textarea
+  +blueprint-form-layout
+  // vars: input width, textarea width, textarea height
+  +blueprint-form-sizes(480px,480px,400px)
+  // vars: unfocused border color, focused color, fieldset border color
+  +blueprint-form-borders
+
+html
+  :height 101%
+body
+  :font-family "Times New Roman",Times,serif
+  :line-height 1.4em
+  :font-size= 100% * 18px / 16px
+  :background url(../images/bg.gif) repeat-y center top
+  a
+    :color #666
+    :position relative
+  a:hover
+    :color #003
+  a:active
+    :top 1px
+.container
+  +container
+.header, .footer, .content, .errors
+  +column(!blueprint_grid_columns)
+  :margin-right 0
+.header
+  :border-bottom 1px solid #333
+  :font-family Georgia,"Times New Roman",Times,serif
+  h2
+    :color #888
+    :font-size 65%
+    :text-transform uppercase    
+    :border-bottom 1px dotted #888
+    :margin-bottom 1.5em
+    ul.nav
+      +horizontal-list
+      :float right
+    a.header_title
+      :color #888
+    a.header_title:hover
+      :color #555
+  h1
+    :font-size 1.2em
+    :font-weight bold
+    :margin-left 5px
+    a
+      :color #333
+      :text-decoration none
+    a:hover
+      :color #930
+    .edit_name
+      :font-size 60%
+      :float right
+      a
+        :color #666
+      a:hover
+        :color #009
+  ul.error_box
+    :padding 10px 10px 10px 30px
+    :font-size 90%
+    :background-color #fff
+    :margin-bottom 1em
+    :border 1px solid #ccc
+    :color #993300
+.content
+  :margin-top 1em
+  :margin-bottom 1em
+  p
+    :margin-bottom .8em
+  a.action
+    :font-size 70%
+    :text-decoration none
+    :color #888
+  a.action:hover
+    :color #00c
+  .author
+    :text-align right
+    :margin-right 2em
+  .story_list
+    :list-style none
+    li
+      :margin-left 10px
+    h2
+      :margin-left 7px
+      :margin-top .5em
+      a.category_name
+        :color #930
+        :font-size 110%
+  .story_form
+    .title
+      :font-family Georgia
+    .form_note
+      :float right
+      :font-size 90%
+      :padding-right 30px
+      :color #666
+    textarea
+      :margin-bottom 1.5em
+.footer
+  :text-transform uppercase
+  :border-top 1px dotted #aaa
+  :text-align center
+  :font-size 70%
+  :letter-spacing 1px
+  :padding-top .5em

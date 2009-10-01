@@ -86,7 +86,7 @@ class Story(db.Model):
             return new_slug
         elif attempt < 5:
             attempt += 1
-            return Story.find_unique_slug(new_slug, attempt)
+            return Story.find_unique_slug(slug, attempt)
         else:
             return ' error '
 
@@ -118,7 +118,7 @@ class MainPage(BaseRequestHandler):
     def get(self):
         story = Story.all().filter('rand_id >', random()).get()
     
-        self.generate('base.html', {
+        self.generate('base_story_page.html', {
             'story': story,})
 
 class CreateStoryPage(BaseRequestHandler):
@@ -439,9 +439,11 @@ class EditAuthorAction(BaseRequestHandler):
         errors = []
 
         if not new_name:
-            errors.append('Please enter a nickname.')
+            errors.append('Please enter a name.')
+        if not len(new_name) < 24:
+            errors.append('Please enter a name with 23 characters or less.')
         if not author or not  author.user_has_access(user):
-            errors.append('You cannot edit this nickname. Sorry.')
+            errors.append("You cannot edit this author's name. Sorry.")
         if not errors:
             author.name = new_name
             author.put()
