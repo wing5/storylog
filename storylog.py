@@ -381,9 +381,11 @@ class DeleteCategoryAction(BaseRequestHandler):
                     )
                 empty_cat.put()
             stories = author.stories.filter('category =', category.key())
+            updated_stories = []
             for story in stories:
                 story.category = empty_cat
-                story.put()
+                updated_stories.append(story)
+            db.put(updated_stories)
             category.delete()
             self.redirect('/You')
         else:
