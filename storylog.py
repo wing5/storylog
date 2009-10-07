@@ -9,16 +9,13 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app, login_required
 from google.appengine.ext import db
 
+#function used in templates, which don't support explicit arguments
+db._BaseQuery.fetch_5 = lambda self: self.fetch(5)
+
 class Author(db.Model):
     name = db.StringProperty(required=True,indexed=False)
     user = db.UserProperty(required=True)
     favorites = db.ListProperty(db.Key) #implement
-
-    def __init__(self, *args, **kwds):
-        """Assigns a given user's id as the author's key name.
-        Assigns a given user's nickname as the author's name.
-        """
-        db.Model.__init__(self, *args, **kwds)
 
     def user_has_access(self, user):
         return user.user_id() == self.key().name()
@@ -96,7 +93,7 @@ class Story(db.Model):
         """
         return user.user_id() == Story.author.get_value_for_datastore(self).name()
     
-class BaseRequestHandler(webapp.RequestHandler):    
+class BaseRequestHandler(webapp.RequestHandler):
     def generate(self, template_name, template_values={}):
         if users.get_current_user():
             url = users.create_logout_url("/")
@@ -413,6 +410,31 @@ class CategoryPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
+class UserProfilePage(BaseRequestHandler):
+    @login_required
+    def get(self):
+        user = users.get_current_user()
+        user_id = user.user_id()
+        errors = []
+
+        if not user:
+            errors.append('Please login.')
+        if not errors:
+            author = Author.get_by_key_name(user_id)
+            if author:
+                categories = author.categories #set max categories/stories?
+                self.generate('author_page.html', {
+                    'author': author,
+                    'categories': categories,
+                    })
+            else:
+                #display the page even if user hasn't created a story yet
+                self.generate('author_page.html')
+        else:
+            self.generate('author_page.html', {
+                'errors': errors,
+                })
+
 class AuthorPage(BaseRequestHandler):
     def get(self, user_id):
         author = Author.get_by_key_name(user_id)
@@ -470,32 +492,6 @@ class EditAuthorAction(BaseRequestHandler):
                 'author': author,
                 'errors': errors,
                 })
-
-class UserProfilePage(BaseRequestHandler):
-    @login_required
-    def get(self):
-        user = users.get_current_user()
-        user_id = user.user_id()
-        errors = []
-
-        if not user:
-            errors.append('Please login.')
-        if not errors:
-            author = Author.get_by_key_name(user_id)
-            if author:
-                categories = author.categories #set max categories/stories?
-                self.generate('author_page.html', {
-                    'author': author,
-                    'categories': categories,
-                    })
-            else:
-                #display the page even if user hasn't created a story yet
-                self.generate('author_page.html')
-        else:
-            self.generate('author_page.html', {
-                'errors': errors,
-                })
-
 
 class SingleStoryPage(BaseRequestHandler):
     def get(self, slug):

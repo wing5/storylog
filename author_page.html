@@ -31,16 +31,26 @@ Author is none.
         {% ifequal author.key.name user.user_id %}<a class="action" href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">[delete]</a>
         {% endifequal %}
       </h2>  
-      {% endif %}
 
-      {% for story in category.stories %}
-      <li>
-        <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
-        {% ifequal author.key.name user.user_id %}
-        <a class="action" href="/Edit/{{ story.key.name|title }}">[edit]</a> <a class="action" href="/Delete/{{ story.key.name|title }}">[delete]</a>
-        {% endifequal %}
-      </li>
-      {% endfor %}
+        {% for story in category.stories.fetch_5 %}
+        <li>
+          <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+          {% ifequal author.key.name user.user_id %}
+          <a class="action" href="/Edit/{{ story.key.name|title }}">[edit]</a> <a class="action" href="/Delete/{{ story.key.name|title }}">[delete]</a>
+          {% endifequal %}
+        </li>
+        {% endfor %}
+
+      {% else %}
+        {% for story in category.stories %}
+        <li>
+          <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+          {% ifequal author.key.name user.user_id %}
+          <a class="action" href="/Edit/{{ story.key.name|title }}">[edit]</a> <a class="action" href="/Delete/{{ story.key.name|title }}">[delete]</a>
+          {% endifequal %}
+        </li>
+        {% endfor %}      
+      {% endif %}
     {% endfor %}
   {% else %}
     {% if not errors %}

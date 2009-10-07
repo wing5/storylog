@@ -24,4 +24,3 @@ def cleanup(content):
     padding removed.
     """
     return escape(content.strip())
-

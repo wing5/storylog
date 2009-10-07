@@ -4,13 +4,13 @@
     <form class="story_form" action="{% block form_action %}/no_form_action_given_in_template{% endblock %}" method="post">
       {% block hidden_story_key %}{% endblock %}
       <label for="story_form_title">Story Title: </label>
-      <input class="title" type="text" id="story_form_title" name="title" maxlength="35" value="{{ title }}" />
+      <input class="title" id="story_form_title" name="title" maxlength="35" value="{{ title }}" />
       <div class="form_note">no html tags please</div>
       <label for="story_form_content">Story Text: </label>
       <textarea class="text" name="content" id="story_form_content">{{ content }}</textarea>
       <div class="form_note">not required</div>
       <label for="story_form_category">Category: </label>
-      <input class="title" type="text" id="story_form_category" name="category_name" maxlength="35" value="{{ category_name }}" />
+      <input class="title" id="story_form_category" name="category_name" maxlength="35" value="{{ category_name }}" />
       <input type="submit" value="{% block input_button %}EMPTY BUTTON{% endblock %}">
     </form>
 {% endblock content %}
