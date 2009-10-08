@@ -27,12 +27,13 @@ Author is none.
     {% for category in categories %}
       {% if category.name %}
       <h2>
+        <div class="view_all_link"><a href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">| view category</a></div>
         <a class="category_name" href="/Author/{{ author.key.name }}/Category/{{ category.slug|title }}">{{ category.name|title }}</a>
         {% ifequal author.key.name user.user_id %}<a class="action" href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">[delete]</a>
         {% endifequal %}
       </h2>  
-
-        {% for story in category.stories.fetch_5 %}
+        {# if the category has a title, display a limited num of stories #}
+        {% for story in category.some_stories %}
         <li>
           <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
           {% ifequal author.key.name user.user_id %}
@@ -52,6 +53,18 @@ Author is none.
         {% endfor %}      
       {% endif %}
     {% endfor %}
+    {% if favorites %}
+      <h2>
+        <div class="view_all_link"><a href="">| view favorites</a></div>
+        <a class="favorites_header" href="">Favorite Stories</a>
+      </h2>
+      
+      {% for story in favorites %}
+      <li>
+        <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+      </li>
+      {% endfor %}
+    {% endif %}
   {% else %}
     {% if not errors %}
     <p><a href="/Share">Write a story!</a></p>

@@ -5,9 +5,28 @@
 {% block page_title %}
 <a href="/{{ story.key.name|title }}">
   {{ story.title|title }}
-  <div class="page_title_action">[permalink]</div>
+  <div class="page_title_action">| permalink</div>
 </a>
 {% endblock %}
+
+{% block story_actions %}
+{% if user %}
+<div class="story_actions">
+  <form method="post" action="/Favorite">
+    <input type="hidden" name="story" value="{{ story.key }}" />
+    {% if not story.belongs_to_current_user %}
+    {% if favorited %}
+    <input type="submit" name="action" value="[ unfavorite ]" style="font-size:90%">
+    {% else %}
+    <input type="submit" name="action" value="[ favorite ]" style="font-size:90%">
+    {% endif %}
+    {% endif %}
+    <input type="submit" name="action" value="[ report ]" style="font-size:90%">
+  </form>
+</div>
+{% endif %}
+{% endblock %}
+
 
 {% block content %}
 {{ story.content|linebreaks }}{# do i need to use a linebreaks tag here #}

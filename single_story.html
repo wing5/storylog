@@ -1,11 +1,10 @@
-{% extends "base.html" %}
+{% extends "base_story_page.html" %}
+
+{# default on other pages, but this template extends the base_story_page #}
+{% block header_title %}<a class="header_title" href="/">RETURN TO STORYLOG</a>{% endblock %}
 
 {% block title %}{{ story.title|title }} | {% endblock %}
 
-{% comment %} non-linked page title: {% endcomment %}
+{# non-linked page title: #}
 {% block page_title %}{{ story.title|title }}{% endblock %}
 
-{% block content %}
-{{ story.content|linebreaks }}
-<p class="author"><a href="/Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
-{% endblock %}

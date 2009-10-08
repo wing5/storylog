@@ -43,8 +43,8 @@ body
   +column(!blueprint_grid_columns)
   :margin-right 0
 .header
-  :border-bottom 1px solid #333
   :font-family Georgia,"Times New Roman",Times,serif
+  :position relative
   h2
     :color #888
     :font-size 65%
@@ -59,9 +59,10 @@ body
     a.header_title:hover
       :color #555
   h1
-    :font-size 1.2em
+    :font-size 120%
     :font-weight bold
-    :margin-left 5px
+    :padding-left 5px
+    :border-bottom 1px solid #333
     a
       :display block
       :color #333
@@ -78,6 +79,18 @@ body
         :color #666
       a:hover
         :color #930
+  .story_actions
+    :position absolute
+    :font-size 80%
+    :right 2px
+    input
+      :background-color #f2f2e1
+      :border none
+      :cursor pointer
+      :color #666
+      :margin-right -12px
+    input:hover
+      :color #930
   ul.error_box
     :padding 10px 10px 10px 30px
     :font-size 90%
@@ -86,7 +99,7 @@ body
     :border 1px solid #ccc
     :color #993300
 .content
-  :margin-top 1em
+  :margin-top 1.5em
   :margin-bottom 1em
   p
     :margin-bottom .8em
@@ -109,6 +122,17 @@ body
       a.category_name
         :color #930
         :font-size 110%
+      a.favorites_header
+        :color #222
+        :font-size 120%
+        :margin-left -7px
+        :letter-spacing 1px
+      .view_all_link
+        :font-size 80%
+        :float right
+        a
+          :text-decoration none
+          :text-transfrom uppercase
   .story_form
     .title
       :font-family Georgia
