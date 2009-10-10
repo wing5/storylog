@@ -1,38 +1,18 @@
 {% extends "author_page.html" %}
 
-{% comment %}
-The only differences between this page and the author page:
-** No for loop over categories
-** The category name isn't linked to the category's page
-{% endcomment %} 
+{% block header_title %}<a href="/Author/{{ author.key.name }}">Return to {{ author.name }}</a>{% endblock %}
 
-{% block content %}
+{% block page_title %}
 {% spaceless %}
-
-<ul class="story_list">
-  {% if author %}
-      {% if category.name %}
-      <h2>
-        {{ category.name|title }}
-        {% ifequal author.key.name user.user_id %}<a class="action" href="/DeleteCategory/{{ user.user_id }}/{{ category.slug|title }}">[delete]</a>
-        {% endifequal %}
-      </h2>  
-      {% endif %}
-
-      {% for story in category.stories %}
-      <li>
-        <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
-        {% ifequal author.key.name user.user_id %}
-        <a class="action" href="/Edit/{{ story.key.name|title }}">[edit]</a> <a class="action" href="/Delete/{{ story.key.name|title }}">[delete]</a>
-        {% endifequal %}
-      </li>
-      {% endfor %}
-  {% else %}
-    {% if not errors %}
-    <p><a href="/Share">Write a story!</a></p>
-    {% endif %}
-  {% endif %}
-</ul>
-
+  {% for category in categories %}
+  {{ category.name }}
+  {% endfor %}
 {% endspaceless %}
-{% endblock content %}
+{% endblock %}
+
+
+{% block category_header %}
+{{ category.name|title }}
+{% endblock %}
+
+{% block favorites_list %}{% endblock %}

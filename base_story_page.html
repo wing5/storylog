@@ -11,24 +11,24 @@
 
 {% block story_actions %}
 {% if user %}
+{% if not story.belongs_to_current_user %}
 <div class="story_actions">
   <form method="post" action="/Favorite">
     <input type="hidden" name="story" value="{{ story.key }}" />
-    {% if not story.belongs_to_current_user %}
-    {% if favorited %}
-    <input type="submit" name="action" value="[ unfavorite ]" style="font-size:90%">
+    {% if story.favorited_by_current_user %}
+    <input type="submit" name="action" value="[ unfavorite ]">
     {% else %}
-    <input type="submit" name="action" value="[ favorite ]" style="font-size:90%">
+    <input type="submit" name="action" value="[ favorite ]">
     {% endif %}
-    {% endif %}
-    <input type="submit" name="action" value="[ report ]" style="font-size:90%">
+    <input type="submit" name="action" value="[ report ]">
   </form>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}
 
 
 {% block content %}
-{{ story.content|linebreaks }}{# do i need to use a linebreaks tag here #}
+{{ story.content|linebreaks }}
 <p class="author"><a href="/Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
 {% endblock %}

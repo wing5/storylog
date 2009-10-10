@@ -1,0 +1,20 @@
+{% extends "author_page.html" %}
+
+{% block header_title %}<a href="/Author/{{ author.key.name }}">Return to {{ author.name }}</a>{% endblock %}
+
+{% block page_title %}
+Favorite Stories
+{% endblock %}
+
+{% block category_list %}{% endblock %}
+
+{% block favorites_list %}
+{% if author.favorites %}
+  {% for story in author.favorite_stories %}
+  <li>
+    <a class="story_title" href="/{{ story.key.name|title }}">{{ story.title|title }}</a>
+  </li>
+  {% endfor %}
+{% endif %}
+{% endblock %}
+

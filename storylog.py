@@ -14,6 +14,12 @@ class Author(db.Model):
     user = db.UserProperty(required=True)
     favorites = db.ListProperty(db.Key) #implement
 
+    def favorite_stories(self):
+        return Story.get(self.favorites)
+
+    def some_favorite_stories(self):
+        return Story.get(self.favorites[:5])
+
     def user_has_access(self, user):
         return user.user_id() == self.key().name()
 
@@ -22,7 +28,7 @@ class Category(db.Model):
                                   collection_name='categories')
     name = db.StringProperty(default='')
     slug = db.StringProperty(default='')
-    #would be nice to have for remove_if_empty and displaying a more link
+    #nice to have for remove_if_empty and displaying a more link
     #story_count = db.IntegerProperty(required=True)
 
     def some_stories(self):
@@ -50,6 +56,17 @@ class Story(db.Model):
     rand_id = db.FloatProperty(required=True)
     date = db.DateTimeProperty(auto_now_add=True)
     #favorited_by = db.ListPropery(db.Key)
+
+    def slug(self):
+        return self.key().name().title()
+
+    def favorited_by_current_user(self):
+        user_id = users.get_current_user().user_id()
+        author = Author.get_by_key_name(user_id)
+        if author and (self.key() in author.favorites):
+            return True
+        else:
+            return False
 
     def belongs_to_current_user(self):
         user_id = users.get_current_user().user_id()
@@ -85,11 +102,23 @@ class Story(db.Model):
 
     def user_has_access(self, user):
         """get_value_for_datastore returns the author's key without a db lookup
-        alternate: ...== self.author.key().name()
+        alternate (with db lookup): ...== self.author.key().name()
         """
         return user.user_id() == Story.author.get_value_for_datastore(self).name()
     
 class BaseRequestHandler(webapp.RequestHandler):
+    def get_author_from_user(self, user):
+        user_id = user.user_id()
+        author = Author.get_by_key_name(user_id)
+        if not author:
+            nickname = user.nickname().split('@')[0]
+            author = Author(
+                key_name = user_id,
+                user = user,
+                name = nickname)
+            author.put()
+        return author
+            
     def generate(self, template_name, template_values={}):
         if users.get_current_user():
             url = users.create_logout_url("/")
@@ -111,50 +140,27 @@ class MainPage(BaseRequestHandler):
     def get(self):
         story = Story.all().order('rand_id').filter('rand_id >', random()).get()
         
-        user = users.get_current_user()
-            
-        if user:
-            favorited = False
-            user_id = user.user_id()
-            author = Author.get_by_key_name(user_id)
-            if author:
-                if story.key() in author.favorites:
-                    favorited = True   
-        
         self.generate('base_story_page.html', {
             'story': story,})
 
 class FavoriteStoryAction(BaseRequestHandler):
     def post(self):
         user = users.get_current_user()
-        if user:
-            user_id = user.user_id()
-        else:
-            self.redirect('/')
-
         story = Story.get(self.request.get('story'))
-
-        author = Author.get_by_key_name(user_id)
-        if not author:
-            nickname = user.nickname().split('@')[0]
-            author = Author(
-                key_name = user_id,
-                user = user,
-                name = nickname)
-            author.put()
-
         # favoriting your own story isn't allowed
-        if story in author.stories:
-            self.redirect('/')
+        if not user or story.belongs_to_current_user:
+            self.redirect('/%s' % story.slug())
+
+        author = self.get_author_from_user(user)
+
+        if story.key() in author.favorites:
+            author.favorites.remove(story.key())
+            author.put()
         else:
-            if story.key() in author.favorites:
-                author.favorites.remove(story.key())
-                author.put()
-            else:
-                author.favorites.append(story.key())
-                author.put()
+            author.favorites.append(story.key())
+            author.put()
         
-        self.redirect('/%s' % story.key().name().title())
+        self.redirect('/%s' % story.slug())
 
 class CreateStoryPage(BaseRequestHandler):
     @login_required
@@ -187,14 +193,7 @@ class CreateStoryAction(BaseRequestHandler):
         if not self.request.get('content'):
             errors.append('Please enter a story.')
         if not errors:
-            author = Author.get_by_key_name(user_id)
-            if not author:
-                nickname = user.nickname().split('@')[0]
-                author = Author(
-                    key_name = user_id,
-                    user = user,
-                    name = nickname)
-                author.put()
+            author = self.get_author_from_user(user)
 
             category_slug = slugify(category_name)
             category = Category.get_by_key_name(user_id + category_slug)
@@ -222,7 +221,7 @@ class CreateStoryAction(BaseRequestHandler):
             story.put()
 
             #all outgoing urls should be in title format
-            self.redirect('/%s' % (story.key().name().title())) 
+            self.redirect('/%s' % (story.slug())) 
 
         self.generate('create_story.html', {
             'errors': errors,
@@ -293,8 +292,7 @@ class EditStoryAction(BaseRequestHandler):
             content = db.Text(cleanup(self.request.get('content')))
             author = Author.get_by_key_name(user_id)
             if not author:
-                self.error(403)
-                return
+                self.redirect("/%s" % story.slug())
 
             category_slug = slugify(category_name)            
             category = Category.get_by_key_name(user_id + category_slug)
@@ -439,15 +437,33 @@ class CategoryPage(BaseRequestHandler):
         if not category:
             errors.append("This is not a valid Category page. Sorry.")
         if not errors:
+            categories = [category,]
             self.generate('category_page.html', {
                 'author': author,
-                'category': category,
+                'categories': categories,
                 })
         else:
             self.generate('category_page.html', {
                 'errors': errors,
                 })
 
+class FavoriteStoriesPage(BaseRequestHandler):
+    def get(self, user_id):
+        author = Author.get_by_key_name(user_id)
+        errors = []
+
+        if not author:
+            errors.append("This is not a valid Author page. Sorry.")
+        if not errors:
+            self.generate('favorites_page.html', {
+                'author': author,
+                })
+        else:
+            self.generate('favorites_page.html', {
+                'errors': errors,
+                })
+
+#combine with author page
 class UserProfilePage(BaseRequestHandler):
     @login_required
     def get(self):
@@ -459,21 +475,15 @@ class UserProfilePage(BaseRequestHandler):
             errors.append('Please login.')
         if not errors:
             author = Author.get_by_key_name(user_id)
-            favorites = []
-            if author.favorites:
-                favorites = Story.get(author.favorites)
             if author:
-                categories = author.categories #set max categories/stories?
+                categories = author.categories.fetch(100) #set max cats/stories?
                 self.generate('author_page.html', {
                     'author': author,
                     'categories': categories,
-                    'favorites': favorites,
                     })
             else:
                 #display the page even if user hasn't become an author yet
-                self.generate('author_page.html', {
-                    'favorites': favorites,
-                    })
+                self.generate('author_page.html')
         else:
             self.generate('author_page.html', {
                 'errors': errors,
@@ -487,14 +497,10 @@ class AuthorPage(BaseRequestHandler):
         if not author:
             errors.append("This is not a valid author page. Sorry.")
         if not errors:
-            favorites = []
-            if author.favorites:
-                favorites = Story.get(author.favorites)
-            categories = author.categories
+            categories = author.categories.fetch(100)
             self.generate('author_page.html', {
                 'author': author,
                 'categories': categories,
-                'favorites': favorites,
                 })
         else:
             self.generate('author_page.html', {
@@ -550,20 +556,9 @@ class SingleStoryPage(BaseRequestHandler):
         if not story:
             errors.append("This story does not exist.")
         if not errors:
-            user = users.get_current_user()
-            
-            favorited = False
-            if user:
-                user_id = user.user_id()
-                author = Author.get_by_key_name(user_id)
-                if author:
-                    if story.key() in author.favorites:
-                        favorited = True   
-
             self.generate('single_story.html', {
                 'story': story,
-                'favorited': favorited,
-                })
+                 })
         else:
             self.generate('single_story.html', {
                 'errors': errors,
@@ -582,6 +577,7 @@ application = webapp.WSGIApplication(
      ('/deletestory.do', DeleteStoryAction),
      ('(?i)/DeleteCategory/([^/]+)/([^/]+)', DeleteCategoryPage),
      ('/deletecategory.do', DeleteCategoryAction),
+     ('(?i)/Author/([^/]+)/Favorites', FavoriteStoriesPage),
      ('(?i)/Author/([^/]+)/Category/([^/]+)', CategoryPage),
      ('(?i)/Author/([^/]+)', AuthorPage),
      ('(?i)/EditAuthor', EditAuthorPage),
