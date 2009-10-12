@@ -11,7 +11,7 @@ from google.appengine.ext import db
 
 class Author(db.Model):
     name = db.StringProperty(required=True,indexed=False)
-    user = db.UserProperty(required=True)
+    user = db.UserProperty(required=True) #unnecessary? since key name is uid
     favorites = db.ListProperty(db.Key) #implement
 
     def favorite_stories(self):
@@ -22,6 +22,36 @@ class Author(db.Model):
 
     def user_has_access(self, user):
         return user.user_id() == self.key().name()
+
+def get_nickname_and_data(user):
+    user_id = user.user_id()
+    data = UserData.get_by_key_name(user_id)
+    if not data:
+        return user.nickname(), None
+    else:
+        return data.name, data
+
+class UserData(db.Model):
+    #key_name = user_id
+    name = db.StringProperty(required=True, indexed=False)
+    favorite_stories = db.ListProperty(db.Key)
+    favorite_categories = db.ListProperty(db.Key)
+    stories = db.ListProperty(db.key)
+
+    def user_has_access(self, user):
+        return user.user_id() == self.key().name()
+
+    def get_favorite_stories(self, num=None):
+        if num:
+            return Story.get(self.favorite_stories[:num])
+        else:
+            return Story.get(self.favorite_stories)
+
+    def get_favorite_categories(self, num):
+        if num:
+            return Story.get(self.favorite_categories[:num])
+        else:
+            return Story.get(self.favorite_categories)
 
 class Category(db.Model): 
     author = db.ReferenceProperty(Author,
@@ -150,6 +180,7 @@ class FavoriteStoryAction(BaseRequestHandler):
         # favoriting your own story isn't allowed
         if not user or story.belongs_to_current_user:
             self.redirect('/%s' % story.slug())
+            return
 
         author = self.get_author_from_user(user)
 
@@ -293,6 +324,7 @@ class EditStoryAction(BaseRequestHandler):
             author = Author.get_by_key_name(user_id)
             if not author:
                 self.redirect("/%s" % story.slug())
+                return
 
             category_slug = slugify(category_name)            
             category = Category.get_by_key_name(user_id + category_slug)
@@ -465,30 +497,41 @@ class FavoriteStoriesPage(BaseRequestHandler):
 
 #combine with author page
 class UserProfilePage(BaseRequestHandler):
-    @login_required
-    def get(self):
-        user = users.get_current_user()
-        user_id = user.user_id()
-        errors = []
-
-        if not user:
-            errors.append('Please login.')
-        if not errors:
+    def get(self, user_id = None):
+        if not user_id:
+            user = users.get_current_user()
+            if not user:
+                self.redirect(users.create_login_url(self.request.uri))
+                return 
+            user_id = user.user_id()
             author = Author.get_by_key_name(user_id)
             if author:
-                categories = author.categories.fetch(100) #set max cats/stories?
+                categories = author.categories.fetch(100)
                 self.generate('author_page.html', {
                     'author': author,
                     'categories': categories,
                     })
             else:
-                #display the page even if user hasn't become an author yet
-                self.generate('author_page.html')
+                self.generate('author_page.html', {
+                    'nickname': user.nickname(), #put into template
+                    })
         else:
-            self.generate('author_page.html', {
-                'errors': errors,
-                })
+            author = Author.get_by_key_name(user_id)
+            errors = []
 
+            if not author:
+                errors.append("This is not a valid author page. Sorry.")
+            if not errors:
+                categories = author.categories.fetch(100)
+                self.generate('author_page.html', {
+                    'author': author,
+                    'categories': categories,
+                    })
+            else:
+                self.generate('author_page.html', {
+                    'errors': errors,
+                    })
+                
 class AuthorPage(BaseRequestHandler):
     def get(self, user_id):
         author = Author.get_by_key_name(user_id)
