@@ -3,32 +3,26 @@
 {% block header_title %}TRUE STORIES AT STORYLOG{% endblock %}
 
 {% block page_title %}
-<a href="/{{ story.key.name|title }}">
+<a href="{{ story.url }}">
   {{ story.title|title }}
   <div class="page_title_action">| permalink</div>
 </a>
 {% endblock %}
 
 {% block story_actions %}
-{% if user %}
 {% if not story.belongs_to_current_user %}
 <div class="story_actions">
-  <form method="post" action="/Favorite">
-    <input type="hidden" name="story" value="{{ story.key }}" />
-    {% if story.favorited_by_current_user %}
-    <input type="submit" name="action" value="[ unfavorite ]">
-    {% else %}
-    <input type="submit" name="action" value="[ favorite ]">
-    {% endif %}
-    <input type="submit" name="action" value="[ report ]">
-  </form>
+  {% if not story.favorited_by_current_user %}
+  <a href="#">[ favorite ]</a>
+  {% else %}
+  <a href="#">[ unfavorite ]</a>
+  {% endif %}
 </div>
-{% endif %}
 {% endif %}
 {% endblock %}
 
 
 {% block content %}
 {{ story.content|linebreaks }}
-<p class="author"><a href="/Author/{{ story.author.key.name }}">{{ story.author.name }}</a></p>
+<p class="author"><a href="/Author/{{ story.author_url }}">{{ story.author_name }}</a></p>
 {% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{% if story_key %}Edit Story |{% else %}Share a Story | {% endif %}{% endblock %}
+
+{% block page_title %}{% if story_key %}{{ title|title }}:{% else %}Share a Story{% endif %}{% endblock %}
+
+{% block content %}
+<form class="story_form" action="/Write" method="post">
+  <input type="hidden" name="story_key" value="{% if story_key %}{{ story_key }}{% endif %}" />
+  {% if not story_key %}
+    <div class="form_note">you cannot edit this title later</div>
+    <label for="story_form_title">Story Title: </label>
+    <input class="title" id="story_form_title" name="title" maxlength="35" value="{{ title }}" />
+  {% else %}
+    <input type="hidden" name="title" value="{{ title }}" />
+  {% endif %}
+  <div class="form_note">no html tags please</div>
+  <label for="story_form_content">Story Text: </label>
+  <textarea class="text" name="content" id="story_form_content">{{ content }}</textarea>
+  <input type="submit" value="{% if story_key %}Save Story{% else %}Submit{% endif %}">
+</form>
+{% endblock content %}
+
