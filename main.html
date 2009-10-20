@@ -4,12 +4,14 @@
 
 {% block page_title %}
 <a href="{{ story.url }}">
-  {{ story.title|title }}
-  <div class="page_title_action">| permalink</div>
+{{ story.title|title }}
+<div class="page_title_action">| permalink</div>
 </a>
 {% endblock %}
 
+{% if not errors %}
 {% block story_actions %}
+{% if user %}
 {% if not story.belongs_to_current_user %}
 <div class="story_actions">
   {% if not story.favorited_by_current_user %}
@@ -19,10 +21,12 @@
   {% endif %}
 </div>
 {% endif %}
+{% endif %}
 {% endblock %}
 
 
 {% block content %}
 {{ story.content|linebreaks }}
-<p class="author"><a href="/Author/{{ story.author_url }}">{{ story.author_name }}</a></p>
+<p class="author"><a href="{{ story.author_url }}">{{ story.author_name }}</a></p>
 {% endblock %}
+{% endif %}

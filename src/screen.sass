@@ -63,6 +63,7 @@ body
     :font-weight bold
     :padding-left 5px
     :border-bottom 1px solid #333
+    :line-height 1.4em
     a
       :display block
       :color #333
@@ -83,15 +84,8 @@ body
     :position absolute
     :font-size 80%
     :right 2px
-    input
-      :font-size 90%
-      :background-color #f2f2e1
-      :border none
-      :cursor pointer
-      :color #666
-      :margin-right -12px
-    input:hover
-      :color #930
+    a
+      :text-decoration none
   ul.error_box
     :padding 10px 10px 10px 30px
     :font-size 90%
@@ -113,6 +107,29 @@ body
   .author
     :text-align right
     :margin-right 2em
+  #collections_container
+    +column(6)
+    +append(1)
+    h3
+      :font-weight bold
+  #new_collection_container
+    +column(6, true)
+    h3
+      :font-weight bold
+  .collection
+    :color #111
+    :list-style-type none
+    :list-style-position inside
+    :margin-left 3px
+    :min-height 25px
+    :background-color black
+    li
+      :padding-left 5px
+      :background-color #aaa
+  .collection:hover
+    :cursor default
+  #collection_form
+    :text-align center
   .story_list
     :list-style none
     li

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script type="text/javascript" src="/js/jquery.js"></script> 
+<script type="text/javascript" src="/js/ui.core.js"></script> 
+<script type="text/javascript" src="/js/ui.sortable.js"></script> 
+
+<script type="text/javascript">
+$(document).ready(function(){
+{% for collection in collections %}
+  $("#{{ collection.html_title }}").sortable({
+connectWith: '.collection',
+});
+  $("#{{ collection.html_title }}").disableSelection();
+{% endfor %}
+  $("#new-collection").sortable({
+connectWith: '.collection',
+update: function() {
+  $("#new_collection_container h3").html("<input class='title' name='new-title' maxlength='35' value='Title' />");
+}
+});
+  $("#new-collection").disableSelection();
+
+  $("#collection_form").submit(function() {
+{% for collection in collections %}
+    $("#{{ collection.html_title }}_input").val($("#{{ collection.html_title }}").sortable('toArray'))
+{% endfor %}
+    $("#new-collection_input").val($("#new-collection").sortable('toArray'))
+    $("#new-title_input").val($("#new-title").val())
+})
+
+});
+</script>
+{% endblock head %}
+
+{% block title %}
+Organize Collections | 
+{% endblock %}
+
+{% block page_title %}
+Organize Collections
+{% endblock %}
+
+{% block content %}
+<div id="collections_container">
+{% for collection in collections %}
+<h3>{{ collection.display_title }}</h3>
+<ul id="{{ collection.html_title }}" class="collection">
+  {% for story_slug in collection.stories %}
+  <li id="{{ story_slug }}">{{ story_slug|title_from_slug }}</li>
+  {% endfor %}
+</ul>
+{% endfor %}
+</div>
+<div id="new_collection_container">
+<h3>New Collection</h3>
+<ul id="new-collection" class="collection">
+</ul>
+</div>
+
+<br /><br /><br /><br />
+<form action="/You/Organize" id="collection_form" method="post">
+  {% for collection in collections %}
+  <input type="hidden" name="{{ collection.html_title }}_input" id="{{ collection.html_title }}_input" />
+  {% endfor %}
+  <input type="hidden" name="new-title_input" id="new-title-input" />
+  <input type="hidden" name="new-collection_input" id="new-collection_input" />
+  <input type="submit" value="Save Collections" />
+</form>
+{% endblock content %}

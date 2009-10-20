@@ -9,9 +9,23 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app, login_required
 from google.appengine.ext import db
 
-#register with webapp template filters
-def slug_to_title(value):
-    return value.replace('-',' ').title()
+webapp.template.register_template_library( 'utils.templatefilters')
+
+class NotUniqueError(Exception):
+    """Raised by Story.make_unique_slug if slug isn't unique."""
+
+class Human(db.Model):
+    """key_name = user_id"""
+    nickname = db.StringProperty(required=True, indexed=False)
+    favorite_stories = db.StringListProperty(indexed=False) #list of slugs
+    favorite_collections = db.StringListProperty(indexed=False) #list of slugs
+    collections = db.ListProperty(db.Key, indexed=False)
+
+    def belongs_to_current_user(self):
+        return users.get_current_user().user_id() == self.key().name()
+
+    def url(self):
+        return '/Author/%s' % self.key().name()
 
 def get_human_and_collection(user):
     """
@@ -37,54 +51,32 @@ def get_human_and_collection(user):
     else:
         return None, None
 
-class Human(db.Model):
-    """key_name = user_id"""
-    nickname = db.StringProperty(required=True, indexed=False)
-    favorite_stories = db.StringListProperty(indexed=False) #list of slugs
-    favorite_collections = db.StringListProperty(indexed=False)
-    collections = db.ListProperty(db.Key, indexed=False)
-
-    def belongs_to_current_user(self):
-        return users.get_current_user().user_id() == self.key().name()
-
-    def url(self):
-        return '/Author/%s' % self.key().name()
-
-class FavoriteIndex(db.Model):
-    """
-    To get a list of people who favorited an item.
-
-    key_name = item's key name
-    parent = story or collection
-    """
-    favorited_by = db.StringListProperty(db.Key) #list of uids
-
-class UserFavorite(db.Model):
-    """
-    To see if an item has been favorited.
-
-    key_name = user_id
-    parent = story or collection
-    """
-    pass
-
 class Collection(db.Model):
     """key_name = user_id + ' ' + col_slug"""
     title = db.StringProperty(default='', indexed=False)
-    stories = db.StringListProperty(required=True, indexed=False)
+    stories = db.StringListProperty(required=True) #list of slugs
     favorite_count = db.IntegerProperty(default=0, indexed=False)
 
-    def get_stories(self, num=None):
-        return Story.get(self.stories[:num])
+    def html_title(self):
+        if not self.title:
+            return "main-collection"
+        else:
+            return self.key().name().split(' ')[1]
 
-    def get_some_stories(self):
-        return Story.get(self.stories[:5])
+    def display_title(self):
+        if not self.title:
+            return "Main Collection"
+        else:
+            return self.title
+
+    def get_stories(self, num=None):
+        return Story.get_by_key_name(self.stories)
 
     def author_url(self):
         return '/Author/%s' % (self.key().name().split(' ')[0])
 
     def url(self):
-        return '/Author/%s/Collection/%s' % tuple(self.key().name().split(' '))
+        return '/Author/%s/Collection/%s' % tuple(self.key().name().title().split(' '))
 
     def belongs_to_current_user(self):
         user = users.get_current_user()
@@ -129,29 +121,33 @@ class Story(db.Model):
     def make_unique_slug(title):
         """A Story's title is transformed into a slug. If this slug
         hasn't been taken already, it is returned. Otherwise,
-        find_unique_slug is called.
+        an error is returned.
         """
         story_slug = slugify(title)
         story = Story.get_by_key_name(story_slug)
         if not story:
             return story_slug
         else:
-            return Story.find_unique_slug(story_slug, attempt=1)
+            raise NotUniqueError
 
-    @staticmethod
-    def find_unique_slug(slug, attempt=1):
-        """Returns 'slug-' + '[1-5]' or an error if all of those slugs
-        have been taken already.
-        """
-        new_slug = slug + '-%d' % attempt
-        story = Story.get_by_key_name(new_slug)
-        if not story:
-            return new_slug
-        elif attempt < 5:
-            attempt += 1
-            return Story.find_unique_slug(slug, attempt)
-        else:
-            return ' error '
+class FavoriteIndex(db.Model):
+    """
+    To get a list of people who favorited an item.
+
+    key_name = item's key name
+    parent = story or collection
+    """
+    favorited_by = db.StringListProperty() #list of uids
+
+class UserFavorite(db.Model):
+    """
+    To see if an item has been favorited.
+
+    key_name = user_id
+    parent = story or collection
+    """
+    pass
+
 
 class BaseRequestHandler(webapp.RequestHandler):
     def generate(self, template_name, template_values={}):
@@ -175,8 +171,25 @@ class MainPage(BaseRequestHandler):
     def get(self):
         story = Story.all().order('rand_id').filter('rand_id >', random()).get()
         
-        self.generate('base_story_page.html', {
+        self.generate('main.html', {
             'story': story,})
+
+class StoryPage(BaseRequestHandler):
+    def get(self, slug):
+        # all incoming urls should be made lowercase
+        story = Story.get_by_key_name(slug.lower())
+        errors = []
+       
+        if not story:
+            errors.append("Couldn't find this story. Sorry.")
+        if not errors:
+            self.generate('story.html', {
+                'story': story,
+                 })
+        else:
+            self.generate('story.html', {
+                'errors': errors,
+                })
 
 class Write(BaseRequestHandler):
     #Author created here or w/ EditAuthorAction or w/ FavoriteStoryAction
@@ -187,7 +200,7 @@ class Write(BaseRequestHandler):
         story_slug = self.request.get('story')
 
         if not story_slug:
-            self.generate('base_submit_page.html')
+            self.generate('write.html')
             return
         else:
             #all incoming urls should be made lowercase
@@ -203,13 +216,13 @@ class Write(BaseRequestHandler):
                 title = story.title
                 content = story.content
             
-                self.generate('base_submit_page.html', {
+                self.generate('write.html', {
                     'story_key': story_key,
                     'title': title,
                     'content': content,
                     })
             else:
-                self.generate('base_submit_page.html', {
+                self.generate('write.html', {
                     'errors': errors,
                     })
             
@@ -217,8 +230,6 @@ class Write(BaseRequestHandler):
         errors = []
         
         user = users.get_current_user()
-        human, collection = get_human_and_collection(user)
-
         story_key = self.request.get('story_key')
 
         if not story_key:
@@ -226,20 +237,27 @@ class Write(BaseRequestHandler):
             if title:
                 if len(title) > 35:
                     errors.append("Please enter a title with 35 letters or less.")
-                slug = Story.make_unique_slug(title)
-                if slug == ' error ':
-                    errors.append("Please change your story's title. Exactly six other people have already chosen a very similar title.")
+                try:
+                    slug = Story.make_unique_slug(title)
+                except NotUniqueError:
+                    errors.append("Please change your story's title. Someone else has already chosen a very similar title.")
             else:
                 errors.append('Please enter a title.')
         else:
             existing_story = Story.get(story_key)
-            if not existing_story.belongs_to_current_user():
+            if not existing_story or not existing_story.belongs_to_current_user():
                 errors.append("You cannot edit this story.")
+            else:
+                action = self.request.get('action')
+                if not action in ['Save Story', 'Delete']:
+                    errors.append("Story action could not be determined. Please report this problem to the website owner.")
         if not self.request.get('content'):
             errors.append('Please enter a story.')
         if not errors:
             content = db.Text(cleanup(self.request.get('content')))
             if not story_key:
+                human, collection = get_human_and_collection(user)
+                
                 #change this rand_id handling before launch
                 rand_id = random()
                 if not Story.all(keys_only=True).get():
@@ -257,22 +275,135 @@ class Write(BaseRequestHandler):
 
                 collection.stories.append(slug)
                 collection.put()
-            else:
-                existing_story.content = content
-                existing_story.put()
 
-            self.redirect(story.url())
-            return
+                self.redirect(story.url())
+                return
+            else:
+                if action == "Save Story":
+                    existing_story.content = content
+                    existing_story.put()
+
+                    self.redirect(existing_story.url())
+                    return
+                else: #delete
+                    human = Human.get_by_key_name(user.user_id())
+                    collections = Collection.get(human.collections)
+                    updated = []
+                    for collection in collections:
+                        if existing_story.key().name() in collection.stories:
+                            collection.stories.remove(existing_story.key().name())
+                            updated.append(collection)
+                    db.put(updated)
+                    existing_story.delete()
+                    self.redirect('/You')
+                    return
         else:
-            self.generate('base_submit_page.html', {
+            self.generate('write.html', {
                 'errors': errors,
                 'story_key': story_key,
                 'title': self.request.get('title'),
                 'content': self.request.get('content'),
                 })
 
+class HumanPage(BaseRequestHandler):
+    def get(self, user_id = None):
+        if not user_id:
+            user = users.get_current_user()
+            if not user:
+                self.redirect(users.create_login_url(self.request.uri))
+                return 
+            user_id = user.user_id()
+            human = Human.get_by_key_name(user_id)
+            if human:
+                collections = Collection.get(human.collections)
+                self.generate('human.html', {
+                    'nickname': human.nickname,
+                    'human': human,
+                    'collections': collections,
+                    })
+            else:
+                self.generate('human.html', {
+                    'nickname': user.nickname().split('@')[0], 
+                    })
+        else:
+            human = Human.get_by_key_name(user_id)
+            errors = []
+
+            if not human:
+                errors.append("This is not a valid author page. Sorry.")
+            if not errors:
+                collections = Collection.get(human.collections)
+                self.generate('human.html', {
+                    'nickname': human.nickname,
+                    'human': human,
+                    'collections': collections,
+                    })
+            else:
+                self.generate('human.html', {
+                    'errors': errors,
+                    })
+
+class Organize(BaseRequestHandler):
+    @login_required
+    def get(self):
+        errors = []
+        user_id = users.get_current_user().user_id()
+        human = Human.get_by_key_name(user_id)
+        if not human:
+            errors.append("You cannot create collections before writing a story.")
+        if not errors:
+            collections = Collection.get(human.collections)
+            self.generate('organize.html', {
+                'nickname': human.nickname,
+                'human': human,
+                'collections': collections,
+                })
+        else:
+            self.generate('organize.html', {
+                'errors': errors,
+                'nickname': user.nickname().split('@')[0], 
+                })
+
+    def post(self):
+        errors = []
+        user = users.get_current_user()
+        if not user:
+            self.redirect(users.create_login_url(self.request.uri))
+            return
+        human = Human.get_by_key_name(user.user_id())
+        if not human:
+            errors.append("You cannot organize collections before writing.")
+        if not errors:
+            collections = Collection.get(human.collections)
+            updated = []
+            for collection in collections:
+                arg = collection.html_title() + "_input"
+                stories = self.request.get_all(arg)
+                if len(stories) == 1:
+                    if not stories[0]:
+                        collection.stories = []
+                else:
+                    collection.stories = stories
+                updated.append(collection)
+            db.put(updated)
+            new_col_stories = self.request.get_all('new-collection_input')
+            if new_col_stories:
+                new_title = self.request.get('new-title-input')
+                new_slug = slugify(unicode(new_title))
+                new_collection = Collection(
+                    key_name = user.user_id() + " " + new_slug,
+                    title = new_title,
+                    stories = new_col_stories)
+                new_collection.put()
+                human.collections.append(new_collection.key())
+                human.put()
+            self.redirect('/You')
+        else:
+            self.generate('organize.html', {
+                'errors': errors,
+                })
 #########################################
-class DeleteStoryPage(BaseRequestHandler):
+class DeleteStory(BaseRequestHandler):
     @login_required
     def get(self, slug):
         user = users.get_current_user()
@@ -293,8 +424,7 @@ class DeleteStoryPage(BaseRequestHandler):
             self.generate('delete_page.html', {
                 'errors': errors,
                 })
-
-class DeleteStoryAction(BaseRequestHandler):
+            
     def post(self):
         story = Story.get(self.request.get('story_key'))
         user = users.get_current_user()
@@ -331,7 +461,7 @@ class DeleteStoryAction(BaseRequestHandler):
                 'story': story,
                 })
 
-class DeleteCollectionPage(BaseRequestHandler):
+class DeleteCollection(BaseRequestHandler):
     @login_required
     def get(self, user_id, cat_slug):
         user = users.get_current_user()
@@ -349,8 +479,7 @@ class DeleteCollectionPage(BaseRequestHandler):
             self.generate('delete_page.html', {
                 'errors': errors,
                 })
-
-class DeleteCollectionAction(BaseRequestHandler):
+            
     def post(self):
         user = users.get_current_user()
         user_id = user.user_id()
@@ -402,7 +531,7 @@ class CollectionPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
-class FavoriteStoriesPage(BaseRequestHandler):
+class Favorites(BaseRequestHandler):
     def get(self, user_id):
         author = Author.get_by_key_name(user_id)
         errors = []
@@ -418,62 +547,7 @@ class FavoriteStoriesPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
-#combine with author page
-class UserProfilePage(BaseRequestHandler):
-    def get(self, user_id = None):
-        if not user_id:
-            user = users.get_current_user()
-            if not user:
-                self.redirect(users.create_login_url(self.request.uri))
-                return 
-            user_id = user.user_id()
-            author = Author.get_by_key_name(user_id)
-            if author:
-                categories = author.categories.fetch(100)
-                self.generate('author_page.html', {
-                    'author': author,
-                    'categories': categories,
-                    })
-            else:
-                self.generate('author_page.html', {
-                    'nickname': user.nickname(), #put into template
-                    })
-        else:
-            author = Author.get_by_key_name(user_id)
-            errors = []
-
-            if not author:
-                errors.append("This is not a valid author page. Sorry.")
-            if not errors:
-                categories = author.categories.fetch(100)
-                self.generate('author_page.html', {
-                    'author': author,
-                    'categories': categories,
-                    })
-            else:
-                self.generate('author_page.html', {
-                    'errors': errors,
-                    })
-                
-class AuthorPage(BaseRequestHandler):
-    def get(self, user_id):
-        author = Author.get_by_key_name(user_id)
-        errors = []
-        
-        if not author:
-            errors.append("This is not a valid author page. Sorry.")
-        if not errors:
-            categories = author.categories.fetch(100)
-            self.generate('author_page.html', {
-                'author': author,
-                'categories': categories,
-                })
-        else:
-            self.generate('author_page.html', {
-                'errors': errors,
-                })
-            
-class EditAuthorPage(BaseRequestHandler):
+class EditHuman(BaseRequestHandler):
     @login_required
     def get(self):
         user = users.get_current_user()
@@ -489,8 +563,7 @@ class EditAuthorPage(BaseRequestHandler):
         self.generate('edit_author.html', {
             'author': author,
             })
-
-class EditAuthorAction(BaseRequestHandler):
+        
     def post(self):
         user = users.get_current_user()
         author = Author.get(self.request.get('author_key'))
@@ -513,39 +586,21 @@ class EditAuthorAction(BaseRequestHandler):
                 'errors': errors,
                 })
 
-class SingleStoryPage(BaseRequestHandler):
-    def get(self, slug):
-        # all incoming urls should be made lowercase
-        story = Story.get_by_key_name(slug.lower())
-        errors = []
-       
-        if not story:
-            errors.append("This story does not exist.")
-        if not errors:
-            self.generate('single_story.html', {
-                'story': story,
-                 })
-        else:
-            self.generate('single_story.html', {
-                'errors': errors,
-                })
 
 # be careful if you want to rearrange the pages: make sure the urls
 # with the broader matches go toward the bottom
 application = webapp.WSGIApplication(
     [('/', MainPage),
-     ('(?i)/You', UserProfilePage),
+     ('(?i)/You', HumanPage),
+     ('(?i)/Author/([^/]+)', HumanPage),
+     ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),
+     ('(?i)/You/Organize', Organize),
+     ('(?i)/Author/([^/]+)/Favorites', Favorites),
      ('(?i)/Write', Write),
-     ('(?i)/Delete/([^/]+)', DeleteStoryPage),
-     ('/deletestory.do', DeleteStoryAction),
-     ('(?i)/DeleteCategory/([^/]+)/([^/]+)', DeleteCollectionPage),
-     ('/deletecategory.do', DeleteCollectionAction),
-     ('(?i)/Author/([^/]+)/Favorites', FavoriteStoriesPage),
-     ('(?i)/Author/([^/]+)/Category/([^/]+)', CollectionPage),
-     ('(?i)/Author/([^/]+)', AuthorPage),
-     ('(?i)/EditAuthor', EditAuthorPage),
-     ('/editauthor.do', EditAuthorAction),
-     ('/([^/]+)', SingleStoryPage)],
+     ('(?i)/Delete', DeleteStory),
+     ('(?i)/DeleteCollection', DeleteCollection),
+     ('(?i)/EditName', EditHuman),
+     ('/([^/]+)', StoryPage)],
     debug=True)
 
 def main():

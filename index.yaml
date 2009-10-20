@@ -10,19 +10,16 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Unused in query history -- copied from input.
 - kind: Category
   properties:
   - name: author
   - name: name
 
-# Unused in query history -- copied from input.
 - kind: Category
   properties:
   - name: author_id
   - name: name
 
-# Unused in query history -- copied from input.
 - kind: Story
   properties:
   - name: author

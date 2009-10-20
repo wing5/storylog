@@ -1,6 +1,6 @@
-{% extends "base_story_page.html" %}
+{% extends "main.html" %}
 
-{# default on other pages, but this template extends the base_story_page #}
+{# the following is default on other pages, but this template extends main #}
 {% block header_title %}<a class="header_title" href="/">RETURN TO STORYLOG</a>{% endblock %}
 
 {% block title %}{{ story.title|title }} | {% endblock %}
@@ -8,3 +8,6 @@
 {# non-linked page title: #}
 {% block page_title %}{{ story.title|title }}{% endblock %}
 
+{% if errors %}
+{% block story_actions %}{% endblock %}
+{% endif %}

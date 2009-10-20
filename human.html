@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if not errors %}{{ nickname }}{% else %}No author{% endif %} | 
+{% endblock %}
+
+{% block page_title %}
+{% if not errors %}
+{{ nickname }}
+{% if human.belongs_to_current_user %}<div class="page_title_action"><a href="/EditName">[change your name]</a></div>{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block story_actions %}
+<div class="story_actions">
+<a href="/You/Organize">[organize collections]</a>
+</div>
+{% endblock %}
+
+
+{% block content %}
+{% spaceless %}
+
+{% if human %}
+<ul class="story_list">
+{% block collection_list %}
+  {% for collection in collections %}
+    {% if not collection.title or collections|length_is:"1" %}
+      {# collection with no title is default: display all stories #}
+      {% for story_slug in collection.stories %}
+      <li>
+        <a class="story_title" href="/{{ story_slug|title }}">{{ story_slug|title_from_slug }}</a>
+        {% if human.belongs_to_current_user %}
+        <a class="action" href="/Write?story={{ story_slug|title }}">[edit]</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    {% else %}{# the category has a title, display a limited num of stories #}
+    <h2>
+      {% block category_header %}
+      <div class="view_all_link"><a href="{{ collection.url }}">| view collection</a></div>
+      <a class="category_name" href="{{ collection.url }}">{{ collection.title|title }}</a>
+      {% endblock %}
+      {% if human.belongs_to_current_user %}
+      <a class="action" href="/DeleteCollection?collection={{ collection.key.name }}">[delete]</a>
+      {% endif %}
+    </h2>  
+      {% for story_slug in collection.stories|slice:":5" %}
+      <li>
+        <a class="story_title" href="/{{ story_slug|title }}">{{ story_slug|title_from_slug }}</a>
+        {% if human.belongs_to_current_user %}
+        <a class="action" href="/Write?story={{ story_slug|title }}">[edit]</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endblock collection_list %}
+{% block favorites_list %}
+  {% if human.favorite_stories %}
+    <h2>
+      <div class="view_all_link"><a href="/Author/{{ human.key.name }}/Favorites">| view favorites</a></div>
+      <a class="favorites_header" href="/Author/{{ human.key.name }}/Favorites">Favorite Stories</a>
+    </h2>
+    {% for story_slug in human.favorite_stories|slice:":5" %}
+    <li>
+      <a class="story_title" href="/{{ story_slug }}">{{ story_slug|title_from_slug }}</a>
+    </li>
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+{% else %}
+  {% if not errors %}
+  <p><a href="/Write">Write a story!</a></p>
+  {% endif %}
+</ul>
+{% endif %}
+
+{% endspaceless %}
+{% endblock content %}
