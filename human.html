@@ -12,11 +12,12 @@
 {% endblock %}
 
 {% block story_actions %}
-<div class="story_actions">
-<a href="/You/Organize">[organize collections]</a>
+{% if human.belongs_to_current_user %}
+<div id="js_enabled" class="story_actions">
+<a href="/You/Organize">[organize stories]</a>
 </div>
+{% endif %}
 {% endblock %}
-
 
 {% block content %}
 {% spaceless %}
@@ -75,6 +76,10 @@
   {% endif %}
 </ul>
 {% endif %}
+
+<script type="text/javascript">
+document.getElementById("js_enabled").style.display="block";
+</script>
 
 {% endspaceless %}
 {% endblock content %}

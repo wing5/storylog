@@ -24,3 +24,6 @@ def cleanup(content):
     padding removed.
     """
     return escape(content.strip())
+
+def cleanup_all(unsafe_list):
+    return [cleanup(item) for item in unsafe_list]

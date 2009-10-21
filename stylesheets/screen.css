@@ -69,6 +69,7 @@ body a:active { top: 1px; }
 .header h1 .page_title_action a:hover { color: #930; }
 .header .story_actions { position: absolute; font-size: 80%; right: 2px; }
 .header .story_actions a { text-decoration: none; }
+.header #js_enabled { display: none; }
 .header ul.error_box { padding: 10px 10px 10px 30px; font-size: 90%; background-color: #fff; margin-bottom: 1em; border: 1px solid #ccc; color: #993300; }
 
 .content { margin-top: 1.5em; margin-bottom: 1em; }
@@ -81,11 +82,16 @@ body a:active { top: 1px; }
 .content #collections_container h3 { font-weight: bold; }
 .content #new_collection_container { display: inline; float: left; margin-right: 0; width: 230px; }
 * html .content #new_collection_container { overflow-x: hidden; }
-.content #new_collection_container h3 { font-weight: bold; }
-.content .collection { color: #111; list-style-type: none; list-style-position: inside; margin-left: 3px; min-height: 25px; background-color: black; }
-.content .collection li { padding-left: 5px; background-color: #aaa; }
+.content #new_collection_container h3 { font-weight: bold; height: 1.7em; }
+.content #new_collection_container h3 input { width: 97%; font: 1em Georgia; }
+.content .collection { list-style-type: none; list-style-position: inside; margin: .4em 0 .4em .4em; min-height: 1.5em; line-height: 1.5em; border: 1px solid gray; }
+.content .collection .sort_placeholder { background-color: #CDE7CD; }
+.content .collection li { color: #222; padding-left: .4em; height: 1.5em; overflow: hidden; white-space: nowrap; background-color: #F2F2E1; }
+.content .collection li:hover { background-color: #D2AF99; }
 .content .collection:hover { cursor: default; }
 .content #collection_form { text-align: center; }
+.content #collection_form_container { display: inline; float: left; margin-right: 10px; width: 510px; padding-top: 2em; }
+* html .content #collection_form_container { overflow-x: hidden; }
 .content .story_list { list-style: none; }
 .content .story_list li { margin-left: 10px; }
 .content .story_list h2 { margin-left: 7px; margin-top: .5em; }

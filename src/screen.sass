@@ -86,6 +86,8 @@ body
     :right 2px
     a
       :text-decoration none
+  #js_enabled
+    :display none
   ul.error_box
     :padding 10px 10px 10px 30px
     :font-size 90%
@@ -116,20 +118,35 @@ body
     +column(6, true)
     h3
       :font-weight bold
+      :height 1.7em
+      input
+        :width 97%
+        :font 1em Georgia
   .collection
-    :color #111
     :list-style-type none
     :list-style-position inside
-    :margin-left 3px
-    :min-height 25px
-    :background-color black
+    :margin .4em 0 .4em .4em
+    :min-height 1.5em
+    :line-height 1.5em
+    :border 1px solid gray
+    .sort_placeholder
+      :background-color #CDE7CD
     li
-      :padding-left 5px
-      :background-color #aaa
+      :color #222
+      :padding-left .4em
+      :height 1.5em
+      :overflow hidden
+      :white-space nowrap
+      :background-color #F2F2E1
+    li:hover
+      :background-color #D2AF99
   .collection:hover
     :cursor default
   #collection_form
     :text-align center
+  #collection_form_container
+    +column(!blueprint_grid_columns)
+    :padding-top 2em
   .story_list
     :list-style none
     li

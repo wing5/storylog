@@ -1,6 +1,6 @@
 import os
 import re
-from utils import slugify, cleanup
+from utils import slugify, cleanup, cleanup_all
 from random import random
 
 from google.appengine.ext.webapp import template
@@ -38,7 +38,9 @@ def get_human_and_collection(user):
         if not human:
             nickname = user.nickname().split('@')[0]
             collection = Collection(
-                key_name = user_id)
+                key_name = user_id,
+                title = '',
+                slug = '')
             collection.put()
             human = Human(
                 key_name = user_id,
@@ -53,7 +55,8 @@ def get_human_and_collection(user):
 
 class Collection(db.Model):
     """key_name = user_id + ' ' + col_slug"""
-    title = db.StringProperty(default='', indexed=False)
+    title = db.StringProperty(indexed=False)
+    slug = db.StringProperty(indexed=False)
     stories = db.StringListProperty(required=True) #list of slugs
     favorite_count = db.IntegerProperty(default=0, indexed=False)
 
@@ -97,6 +100,7 @@ class Story(db.Model):
     date = db.DateTimeProperty(auto_now_add=True, indexed=False) #not used
     favorite_count = db.IntegerProperty(default=0, indexed=False)
     author_name = db.StringProperty(required=True, indexed=False)
+    #human attribute isn't used currently, but may be useful later
     human = db.ReferenceProperty(Human, required=True,
                                  collection_name='stories')
 
@@ -347,7 +351,8 @@ class Organize(BaseRequestHandler):
     @login_required
     def get(self):
         errors = []
-        user_id = users.get_current_user().user_id()
+        user = users.get_current_user()
+        user_id = user.user_id()
         human = Human.get_by_key_name(user_id)
         if not human:
             errors.append("You cannot create collections before writing a story.")
@@ -372,31 +377,40 @@ class Organize(BaseRequestHandler):
             return
         human = Human.get_by_key_name(user.user_id())
         if not human:
-            errors.append("You cannot organize collections before writing.")
+            errors.append("Please write stories before making collections.")
         if not errors:
             collections = Collection.get(human.collections)
             updated = []
             for collection in collections:
                 arg = collection.html_title() + "_input"
-                stories = self.request.get_all(arg)
-                if len(stories) == 1:
-                    if not stories[0]:
-                        collection.stories = []
+                story_list = self.request.get(arg)
+                if not story_list:
+                    collection.stories = []                   
                 else:
+                    stories = [cleanup(s) for s in story_list.split(",")]
                     collection.stories = stories
                 updated.append(collection)
             db.put(updated)
-            new_col_stories = self.request.get_all('new-collection_input')
-            if new_col_stories:
-                new_title = self.request.get('new-title-input')
-                new_slug = slugify(unicode(new_title))
-                new_collection = Collection(
-                    key_name = user.user_id() + " " + new_slug,
-                    title = new_title,
-                    stories = new_col_stories)
-                new_collection.put()
-                human.collections.append(new_collection.key())
-                human.put()
+            new_col_story_list = self.request.get('new-collection_input')
+            if new_col_story_list:
+                stories = [cleanup(s) for s in new_col_story_list.split(",")]
+                new_col_title = cleanup(self.request.get('new-title_input'))
+                new_col_slug = slugify(unicode(new_col_title))
+                existing_col = Collection.get_by_key_name(user.user_id() + " " + new_col_slug)
+                if existing_col:
+                    for story in stories:
+                        if story not in existing_col.stories:
+                            existing_col.stories.append(story)
+                    existing_col.put()
+                else:
+                    new_collection = Collection(
+                        key_name = user.user_id() + " " + new_col_slug,
+                        title = new_col_title,
+                        slug = new_col_slug,
+                        stories = stories)
+                    new_collection.put()
+                    human.collections.append(new_collection.key())
+                    human.put()
             self.redirect('/You')
         else:
             self.generate('organize.html', {
