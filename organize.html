@@ -5,39 +5,52 @@
 <script type="text/javascript" src="/js/ui.core.js"></script> 
 <script type="text/javascript" src="/js/ui.sortable.js"></script> 
 <script type="text/javascript">
-$(document).ready(function(){
+    $(document).ready(function(){
         {% for collection in collections %}
         $("#{{ collection.html_title }}").sortable({
-                connectWith: '.collection',
-                    placeholder: 'sort_placeholder',
-                    });
+            connectWith: '.collection',
+            placeholder: 'sort_placeholder',
+            update: function() {
+                $("#new_collection_container").css({'height': $("#collections_container").height()-47 });
+            },
+        });
         {% endfor %}
         $("#new-collection").sortable({
-                connectWith: '.collection',
-                    update: function() {
-                    $("#new_collection_container h3").html("<input id='new-title' maxlength='33' value='Collection Title' />");
-                    $("#new-title").focus(function() {
-                            if( this.value == this.defaultValue ) {
-                                this.value = "";
-                            }
-                        }).blur(function() {
-                                if( !this.value.length ) {
-                                    this.value = this.defaultValue;
-                                }
-                            });
-                }
-            });
-
+            connectWith: '.collection',
+            placeholder: 'sort_placeholder',
+            update: function() {
+                $("#new_collection_container h3").html("<input id='new-title' maxlength='33' value='Collection Title' />");
+                $("#new_collection_container ul").css("background","#ffffff");
+                $("#new-title").focus(function() {
+                    if( this.value == this.defaultValue ) {
+                        this.value = "";
+                    }
+                }).blur(function() {
+                    if( !this.value.length ) {
+                        this.value = this.defaultValue;
+                    }
+                });
+            }
+        });
+        
         $(".collection").disableSelection();
-
+        
         $("#collection_form").submit(function() {
-                {% for collection in collections %}
-                $("#{{ collection.html_title }}_input").val( $("#{{ collection.html_title }}").sortable('toArray') );
-                {% endfor %}
-                $("#new-collection_input").val( $("#new-collection").sortable('toArray') );
-                $("#new-title_input").val( $("#new-title").val() );
-            });
+            {% for collection in collections %}
+            $("#{{ collection.html_title }}_input").val( $("#{{ collection.html_title }}").sortable('toArray') );
+            {% endfor %}
+            $("#new-collection_input").val( $("#new-collection").sortable('toArray') );
+            $("#new-title_input").val( $("#new-title").val() );
+        });
+        
+        $("#new_collection_container").css({'height': $("#collections_container").height()-47 });
 
+        $(".collection li").mousedown(function() {
+            $(this).addClass("grabbed");
+        }).mouseup(function() {
+            $(this).removeClass("grabbed");
+        });
+        
     });
 </script> 
 {% endblock head %}
@@ -53,30 +66,30 @@ Organize Collections
 {% block content %}
 {% if human %}
 <div id="collections_container">
-{% for collection in collections %}
-<h3>{{ collection.display_title }}</h3>
-<ul id="{{ collection.html_title }}" class="collection">
-  {% for story_slug in collection.stories %}
-  <li id="{{ story_slug }}">{{ story_slug|title_from_slug }}</li>
+  {% for collection in collections %}
+  <h3>{{ collection.display_title }}</h3>
+  <ul id="{{ collection.html_title }}" class="collection">
+    {% for story_slug in collection.stories %}
+    <li id="{{ story_slug }}">{{ story_slug|title_from_slug }}</li>
+    {% endfor %}
+  </ul>
   {% endfor %}
-</ul>
-{% endfor %}
 </div>
 <div id="new_collection_container">
-<h3>New Collection</h3>
-<ul id="new-collection" class="collection">
-</ul>
+  <h3>New Collection</h3>
+  <ul id="new-collection" class="collection">
+  </ul>
 </div>
 
 <div id="collection_form_container">
-<form action="/You/Organize" id="collection_form" method="post">
-  {% for collection in collections %}
-  <input type="hidden" name="{{ collection.html_title }}_input" id="{{ collection.html_title }}_input" />
-  {% endfor %}
-  <input type="hidden" name="new-title_input" id="new-title_input" />
-  <input type="hidden" name="new-collection_input" id="new-collection_input" />
-  <input type="submit" value="Save Collections" />
-</form>
+  <form action="/You/Organize" id="collection_form" method="post">
+    {% for collection in collections %}
+    <input type="hidden" name="{{ collection.html_title }}_input" id="{{ collection.html_title }}_input" />
+    {% endfor %}
+    <input type="hidden" name="new-title_input" id="new-title_input" />
+    <input type="hidden" name="new-collection_input" id="new-collection_input" />
+    <input type="submit" value="Save Collections" />
+  </form>
 </div>
 {% endif %}
 {% endblock content %}

@@ -561,13 +561,14 @@ class Favorites(BaseRequestHandler):
                 'errors': errors,
                 })
 
-class EditHuman(BaseRequestHandler):
+class EditName(BaseRequestHandler):
     @login_required
     def get(self):
+        errors = []
         user = users.get_current_user()
         user_id = user.user_id()
-        author = Author.get_by_key_name(user_id)
-        if not author:
+        human = Human.get_by_key_name(user_id)
+        if not human:
             nickname = user.nickname().split('@')[0]
             author = Author(
                 Key_name = user_id,
@@ -613,7 +614,7 @@ application = webapp.WSGIApplication(
      ('(?i)/Write', Write),
      ('(?i)/Delete', DeleteStory),
      ('(?i)/DeleteCollection', DeleteCollection),
-     ('(?i)/EditName', EditHuman),
+     ('(?i)/EditName', EditName),
      ('/([^/]+)', StoryPage)],
     debug=True)
 

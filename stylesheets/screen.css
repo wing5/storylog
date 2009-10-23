@@ -64,7 +64,7 @@ body a:active { top: 1px; }
 .header h1 a { display: block; color: #333; text-decoration: none; }
 .header h1 a:hover { color: #930; }
 .header h1 a:hover .page_title_action { color: #930; }
-.header h1 .page_title_action { color: #666; font-size: 60%; float: right; }
+.header h1 .page_title_action { font-weight: normal; color: #666; font-size: 60%; float: right; }
 .header h1 .page_title_action a { color: #666; }
 .header h1 .page_title_action a:hover { color: #930; }
 .header .story_actions { position: absolute; font-size: 80%; right: 2px; }
@@ -79,21 +79,23 @@ body a:active { top: 1px; }
 .content .author { text-align: right; margin-right: 2em; }
 .content #collections_container { display: inline; float: left; margin-right: 10px; width: 230px; padding-right: 40px; }
 * html .content #collections_container { overflow-x: hidden; }
-.content #collections_container h3 { font-weight: bold; }
+.content #collections_container h3 { font-weight: bold; height: 1.7em; }
+.content #collections_container ul { background-color: gray; }
 .content #new_collection_container { display: inline; float: left; margin-right: 0; width: 230px; }
 * html .content #new_collection_container { overflow-x: hidden; }
 .content #new_collection_container h3 { font-weight: bold; height: 1.7em; }
-.content #new_collection_container h3 input { width: 97%; font: 1em Georgia; }
-.content .collection { list-style-type: none; list-style-position: inside; margin: .4em 0 .4em .4em; min-height: 1.5em; line-height: 1.5em; border: 1px solid gray; }
+.content #new_collection_container h3 input { width: 97%; font: 1em Georgia; color: #900; }
+.content #new_collection_container #new-collection { height: 100%; background: white url(../images/draghere.png) no-repeat center center; }
+.content .collection { list-style-type: none; list-style-position: inside; margin: .4em 0 .4em .4em; min-height: 1.5em; line-height: 1.5em; border: 1px solid gray; background-color: gray; }
 .content .collection .sort_placeholder { background-color: #CDE7CD; }
-.content .collection li { color: #222; padding-left: .4em; height: 1.5em; overflow: hidden; white-space: nowrap; background-color: #F2F2E1; }
-.content .collection li:hover { background-color: #D2AF99; }
-.content .collection:hover { cursor: default; }
+.content .collection li { color: #222; padding-left: .4em; height: 1.5em; overflow: hidden; white-space: nowrap; background-color: #F2F2E1; margin-bottom: 1px; margin-right: 1px; }
+.content .collection li:hover { background-color: #C99; cursor: url(../images/grab.cur), default; }
+.content .collection li.grabbed { cursor: url(../images/grabbing.cur), default; }
 .content #collection_form { text-align: center; }
 .content #collection_form_container { display: inline; float: left; margin-right: 10px; width: 510px; padding-top: 2em; }
 * html .content #collection_form_container { overflow-x: hidden; }
 .content .story_list { list-style: none; }
-.content .story_list li { margin-left: 10px; }
+.content .story_list li { margin-left: 1em; }
 .content .story_list h2 { margin-left: 7px; margin-top: .5em; }
 .content .story_list h2 a.category_name { color: #930; font-size: 110%; }
 .content .story_list h2 a.favorites_header { color: #222; font-size: 120%; margin-left: -7px; letter-spacing: 1px; }
