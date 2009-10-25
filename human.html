@@ -5,16 +5,16 @@
 {% endblock %}
 
 {% block page_title %}
-{% if not errors %}
+{% if not errors %}{# should be if human #}
 {{ nickname }}
-{% if human.belongs_to_current_user %}<div class="page_title_action"><a href="/EditName">[edit name]</a></div>{% endif %}
+{% if human.belongs_to_current_user %}<div class="page_title_action"><a class="action" href="/You/EditName">edit name</a></div>{% endif %}
 {% endif %}
 {% endblock %}
 
 {% block story_actions %}
 {% if human.belongs_to_current_user %}
-<div id="js_enabled" class="story_actions">
-<a href="/You/Organize">[organize stories]</a>
+<div id="page_actions">
+<a class="action" href="/You/Organize">organize stories</a>
 </div>
 {% endif %}
 {% endblock %}
@@ -39,7 +39,7 @@
     {% else %}{# the category has a title, display a limited num of stories #}
     <h2>
       {% block category_header %}
-      <div class="view_all_link"><a href="{{ collection.url }}">| view collection</a></div>
+      <div class="view_all_link"><a href="{{ collection.url }}">view collection</a></div>
       <a class="category_name" href="{{ collection.url }}">{{ collection.title|title }}</a>
       {% endblock %}
       {% if human.belongs_to_current_user %}
@@ -76,10 +76,6 @@
   {% endif %}
 </ul>
 {% endif %}
-
-<script type="text/javascript">
-document.getElementById("js_enabled").style.display="block";
-</script>
 
 {% endspaceless %}
 {% endblock content %}

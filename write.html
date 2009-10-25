@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if story_key %}Edit Story |{% else %}Share a Story | {% endif %}{% endblock %}
+{% block head_title %}{% if story_key %}Edit Story |{% else %}Share a Story | {% endif %}{% endblock %}
 
 {% block page_title %}{% if story_key %}{{ title|title }}:{% else %}Share a Story{% endif %}{% endblock %}
 
@@ -18,10 +18,10 @@
   <label for="story_content">Story Text: </label>
   <textarea class="text" name="content" id="story_content">{{ content }}</textarea>
   {% if story_key %}
-  <input type="submit" name="action" value="Delete" onclick="return confirm('Are you sure you wish to delete this story?')">
-  <input type="submit" name="action" value="Save Story">
+  <input type="submit" name="action" value="Delete" onclick="return confirm('Are you sure you wish to delete this story?')" />
+  <input type="submit" name="action" value="Save Story" />
   {% else %}
-  <input type="submit" value="Submit">
+  <input type="submit" value="Submit" />
   {% endif %}
   
 </form>

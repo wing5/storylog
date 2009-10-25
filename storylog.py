@@ -347,6 +347,52 @@ class HumanPage(BaseRequestHandler):
                     'errors': errors,
                     })
 
+class EditName(BaseRequestHandler):
+    @login_required
+    def get(self):
+        errors = []
+        user_id = users.get_current_user().user_id()
+        human = Human.get_by_key_name(user_id)
+        if not human:
+            errors.append("You can't change your name before writing a story.")
+        if not errors:
+            self.generate('edit_name.html', {
+                'human': human,
+                })
+            return
+        else:
+            self.generate('edit_name.html', {
+                'errors': errors,
+                })
+        
+    def post(self):
+        human = Human.get(cleanup(self.request.get('human_key')))
+        nickname = cleanup(self.request.get('nickname'))
+        errors = []
+
+        if not nickname:
+            errors.append('Please enter a name.')
+        if not len(nickname) < 24:
+            errors.append('Please enter a name with 23 letters or less.')
+        if not human or not  human.belongs_to_current_user():
+            errors.append("You cannot edit this name. Sorry.")
+        if not errors:
+            stories = human.stories.fetch(1000)
+            updated = []
+            for story in stories:
+                story.author_name = nickname
+                updated.append(story)
+            human.nickname = nickname
+            updated.append(human)
+            db.put(updated)
+            self.redirect('/You')
+            return
+        else:
+            self.generate('edit_name.html', {
+                'human': human,
+                'errors': errors,
+                })
+
 class Organize(BaseRequestHandler):
     @login_required
     def get(self):
@@ -397,6 +443,7 @@ class Organize(BaseRequestHandler):
                 new_col_title = cleanup(self.request.get('new-title_input'))
                 new_col_slug = slugify(unicode(new_col_title))
                 existing_col = Collection.get_by_key_name(user.user_id() + " " + new_col_slug)
+                #new collection with non-unique key name == existing collection
                 if existing_col:
                     for story in stories:
                         if story not in existing_col.stories:
@@ -561,45 +608,6 @@ class Favorites(BaseRequestHandler):
                 'errors': errors,
                 })
 
-class EditName(BaseRequestHandler):
-    @login_required
-    def get(self):
-        errors = []
-        user = users.get_current_user()
-        user_id = user.user_id()
-        human = Human.get_by_key_name(user_id)
-        if not human:
-            nickname = user.nickname().split('@')[0]
-            author = Author(
-                Key_name = user_id,
-                user = user,
-                name = nickname)
-            author.put()
-        self.generate('edit_author.html', {
-            'author': author,
-            })
-        
-    def post(self):
-        user = users.get_current_user()
-        author = Author.get(self.request.get('author_key'))
-        new_name = cleanup(self.request.get('author_name'))
-        errors = []
-
-        if not new_name:
-            errors.append('Please enter a name.')
-        if not len(new_name) < 24:
-            errors.append('Please enter a name with 23 letters or less.')
-        if not author or not  author.user_has_access(user):
-            errors.append("You cannot edit this author's name. Sorry.")
-        if not errors:
-            author.name = new_name
-            author.put()
-            self.redirect('/You')
-        else:
-            self.generate('edit_author.html', {
-                'author': author,
-                'errors': errors,
-                })
 
 
 # be careful if you want to rearrange the pages: make sure the urls
@@ -614,7 +622,7 @@ application = webapp.WSGIApplication(
      ('(?i)/Write', Write),
      ('(?i)/Delete', DeleteStory),
      ('(?i)/DeleteCollection', DeleteCollection),
-     ('(?i)/EditName', EditName),
+     ('(?i)/You/EditName', EditName),
      ('/([^/]+)', StoryPage)],
     debug=True)
 

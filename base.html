@@ -4,60 +4,70 @@
 <html lang="en">
   <head>
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
-    <title>{% block title %}{% endblock %}Storylog</title>
+    <title>{% block head_title %}{% endblock %}Storylog</title>
     <link href="/favicon.ico" type="image/ico" rel="shortcut icon"/>
 
     <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" />
     <link href="/stylesheets/print.css" media="print" rel="stylesheet" type="text/css" />
-  <!--[if lt IE 8]>
-      <link href="/stylesheets/ie.css" media="screen, projection" rel="stylesheet" type="text/css" />
-  <![endif]-->
+    <!--[if lt IE 8]>
+        <link href="/stylesheets/ie.css" media="screen, projection" rel="stylesheet" type="text/css" />
+    <![endif]-->
     {% block head %}{% endblock %}
   </head>
-
+{% spaceless %}
   <body>
 
     <div class="container">
+      <div class="nav">
+        <ul class="nav_links">
+          <li> <a href="/">RELOAD</a> </li>
+          {% if user %}
+          <li> <a href="/You">YOU</a> </li>
+          <li> <a href="/Write">SHARE</a> </li>
+          {% endif %}
+          <li> <a href="{{ url }}">{{ url_linktext }}</a> </li>
+        </ul>
+        <div class="main_nav">
+          {% block main_nav %}<a href="/">RETURN TO STORYLOG</a>{% endblock %}
+        </div>
+      </div>
+
       <div class="header">
-
-	    <h2>{% block header_title %}<a class="header_title" href="/">RETURN TO STORYLOG</a>{% endblock %}
-	      <ul class="nav">
-	        <li><a href="/">reload</a></li>
-            {% if user %}
-	        <li><a href="/You">you</a></li>
-	        <li><a href="/Write">share</a></li>
-            {% endif %}
-	        <li><a href="{{ url }}">{{ url_linktext }}</a></li>
-	      </ul>
-	    </h2>
-
         {% if errors %}
-        <ul class="error_box">
+        <ul class="errors">
           {% for error in errors %}
           <li>{{ error }}</li>
           {% endfor %}
         </ul>
         {% endif %}
 
-	    <h1>
-          {% block page_title %}EMPTY PAGE TITLE{% endblock %}
-        </h1>
-        {% block story_actions %}{% endblock %}
-
+        <div class="page_header">
+          <div class="page_helper">
+            {% block page_helper %}{% endblock %}
+          </div>
+          <h1 class="page_title">
+            {% block page_title %}Error: Empty Page Title{% endblock %}
+          </h1>
+        </div>
+        
+        <div id="page_actions">
+          {% block page_actions %}{% endblock %}
+        </div>
       </div>
-      
+
       <div class="content">
-        {% block content %}
-        EMPTY CONTENT BLOCK
-        {% endblock %}
+        {% block content %}Error: No Content{% endblock %}
       </div>
 
       <div class="footer">
-        <p>&copy; Storylog | <a href="/About">About &amp; FAQ</a></p>
+        &copy; Storylog | <a href="/About">About &amp; FAQ</a>
       </div>
-
     </div>
-  
-  </body>
 
+    <script type="text/javascript">
+      document.getElementById("page_actions").style.display="block";
+    </script>
+
+  </body>
+{% endspaceless %}
 </html>

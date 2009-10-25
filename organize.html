@@ -6,21 +6,20 @@
 <script type="text/javascript" src="/js/ui.sortable.js"></script> 
 <script type="text/javascript">
     $(document).ready(function(){
+        $("#new-collection").css({'min-height': $("#collections_container").height()-47 });        
+
         {% for collection in collections %}
         $("#{{ collection.html_title }}").sortable({
             connectWith: '.collection',
             placeholder: 'sort_placeholder',
-            update: function() {
-                $("#new_collection_container").css({'height': $("#collections_container").height()-47 });
-            },
         });
         {% endfor %}
         $("#new-collection").sortable({
             connectWith: '.collection',
             placeholder: 'sort_placeholder',
             update: function() {
-                $("#new_collection_container h3").html("<input id='new-title' maxlength='33' value='Collection Title' />");
                 $("#new_collection_container ul").css("background","#ffffff");
+                if ($("#new_collection_container h3").text() == "New Collection") { $("#new_collection_container h3").html("<input id='new-title' maxlength='33' value='Collection Title' />") };
                 $("#new-title").focus(function() {
                     if( this.value == this.defaultValue ) {
                         this.value = "";
@@ -34,7 +33,7 @@
         });
         
         $(".collection").disableSelection();
-        
+
         $("#collection_form").submit(function() {
             {% for collection in collections %}
             $("#{{ collection.html_title }}_input").val( $("#{{ collection.html_title }}").sortable('toArray') );
@@ -42,8 +41,6 @@
             $("#new-collection_input").val( $("#new-collection").sortable('toArray') );
             $("#new-title_input").val( $("#new-title").val() );
         });
-        
-        $("#new_collection_container").css({'height': $("#collections_container").height()-47 });
 
         $(".collection li").mousedown(function() {
             $(this).addClass("grabbed");
@@ -58,6 +55,8 @@
 {% block title %}
 Organize Collections | 
 {% endblock %}
+
+{% block header_title %}<a class="header_title" href="/You">RETURN TO PROFILE</a>{% endblock %}
 
 {% block page_title %}
 Organize Collections

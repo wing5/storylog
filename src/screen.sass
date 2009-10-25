@@ -32,82 +32,68 @@ body
   :background url(../images/bg.gif) repeat-y center top
   a
     :color #666
-    :position relative
   a:hover
-    :color #003
-  a:active
-    :top 1px
+    :color #222
+  a.action
+    :text-decoration none
+  a.action:hover
+    :color #060
 .container
   +container
-.header, .footer, .content, .errors
-  +column(!blueprint_grid_columns)
-  :margin-right 0
-.header
+.nav, .header, .content, .footer
+  +column(!blueprint_grid_columns, true)
+.nav
   :font-family Georgia,"Times New Roman",Times,serif
+  :color #888
+  :font-size 65%
+  :text-transform uppercase
+  :border-bottom 1px dotted #888
+  :margin-bottom 1.5em
+  .main_nav
+    :float left
+  .nav_links
+    +horizontal-list
+    :float right
+.header
   :position relative
-  h2
-    :color #888
-    :font-size 65%
-    :text-transform uppercase    
-    :border-bottom 1px dotted #888
-    :margin-bottom 1.5em
-    ul.nav
-      +horizontal-list
-      :float right
-    a.header_title
-      :color #888
-    a.header_title:hover
-      :color #555
-  h1
-    :font-size 120%
-    :font-weight bold
-    :padding-left 5px
-    :border-bottom 1px solid #333
-    :line-height 1.4em
-    a
-      :display block
-      :color #333
-      :text-decoration none  
-    a:hover
-      :color #930
-      .page_title_action
-        :color #930
-    .page_title_action
-      :font-weight normal
-      :color #666
-      :font-size 60%
-      :float right
-      a
-        :color #666
-      a:hover
-        :color #930
-  .story_actions
-    :position absolute
-    :font-size 80%
-    :right 2px
-    a
-      :text-decoration none
-  #js_enabled
-    :display none
-  ul.error_box
+  :padding-bottom 1.5em
+  .errors
     :padding 10px 10px 10px 30px
     :font-size 90%
     :background-color #fff
     :margin-bottom 1em
     :border 1px solid #ccc
-    :color #993300
+    :color #930
+  .page_helper
+    :color #ccc
+    :float right
+    :font-size 90%
+    :padding .25em 8px 0 0
+    a
+      :text-decoration none
+    a:hover
+      :color #930
+  .page_title
+    :font-size 120%
+    :font-weight bold
+    :padding-left 5px
+    :line-height 1.4em
+  .page_header
+    :border-bottom 1px solid #222
+  #page_actions
+    :display none
+    :position absolute
+    :bottom 0
+    :right 0
+    :font-size 90%
+    :padding-right 8px
 .content
-  :margin-top 1.5em
-  :margin-bottom 1em
-  p
-    :margin-bottom .8em
-  a.action
-    :font-size 70%
-    :text-decoration none
-    :color #888
-  a.action:hover
-    :color #00c
-  .author
+  :margin-bottom 1.5em
+  .content_text 
+    :padding-left 5px
+    p
+      :margin-bottom 1em
+  .content_author
     :text-align right
     :margin-right 2em
   #collections_container
@@ -128,7 +114,6 @@ body
         :font 1em Georgia
         :color #900
     #new-collection
-      :height 100%
       :background white url(../images/draghere.png) no-repeat center center
   .collection
     :list-style-type none

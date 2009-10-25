@@ -1,32 +1,31 @@
 {% extends "base.html" %}
 
-{% block header_title %}TRUE STORIES AT STORYLOG{% endblock %}
+{% block main_nav %}TRUE STORIES AT STORYLOG{% endblock %}
 
 {% block page_title %}
-<a href="{{ story.url }}">
 {{ story.title|title }}
-<div class="page_title_action">| permalink</div>
-</a>
 {% endblock %}
 
-{% if not errors %}
-{% block story_actions %}
-{% if user %}
-{% if not story.belongs_to_current_user %}
-<div class="story_actions">
+{% block page_helper %}
+<a href="{{ story.url }}">link</a>
+{% if user and story %}
   {% if not story.favorited_by_current_user %}
-  <a href="#">[ favorite ]</a>
+  | <a href="#" class="action">save</a>
   {% else %}
-  <a href="#">[ unfavorite ]</a>
+  | <a href="#" class="action">unsave</a>
   {% endif %}
-</div>
-{% endif %}
 {% endif %}
 {% endblock %}
 
+{% block page_actions %}
+
+{% endblock %}
 
 {% block content %}
-{{ story.content|linebreaks }}
-<p class="author"><a href="{{ story.author_url }}">{{ story.author_name }}</a></p>
+<div class="content_text">
+  {{ story.content|linebreaks }}
+  <h2 class="content_author">
+    <a href="{{ story.author_url }}">{{ story.author_name }}</a>
+  </h2>
+</div>
 {% endblock %}
-{% endif %}

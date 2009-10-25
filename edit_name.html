@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block head_title %}Edit Name | {% endblock %}
+
+{% block main_nav %}<a href="/You">RETURN TO PROFILE</a>{% endblock %}
+
+{% block page_title %}Enter Your Name:{% endblock %}
+
+{% block content %}
+<form action="/You/EditName" class="story_form" method="post">
+  <input type="hidden" name="human_key" value="{{ human.key }}" />
+  <input class="title" name="nickname" maxlength="23" />
+  <input type="submit" value="Submit" />
+</form>
+{% endblock %}
