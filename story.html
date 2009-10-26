@@ -5,4 +5,12 @@
 {# default on most pages, but this template extends main #}
 {% block main_nav %}<a href="/">RETURN TO STORYLOG</a>{% endblock %}
 
-{% block page_helper %}{% endblock %}
+{% block page_helper %}
+{% if user and story %}
+  {% if not story.favorited_by_current_user %}
+  <a href="#" class="action">save</a>
+  {% else %}
+  <a href="#" class="action">unsave</a>
+  {% endif %}
+{% endif %}
+{% endblock %}

@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block page_helper %}
-<a href="{{ story.url }}">link</a>
+<a href="{{ story.url }}" class="action">link</a>
 {% if user and story %}
   {% if not story.favorited_by_current_user %}
   | <a href="#" class="action">save</a>
@@ -17,9 +17,7 @@
 {% endif %}
 {% endblock %}
 
-{% block page_actions %}
-
-{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block content %}
 <div class="content_text">

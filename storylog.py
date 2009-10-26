@@ -22,7 +22,8 @@ class Human(db.Model):
     collections = db.ListProperty(db.Key, indexed=False)
 
     def belongs_to_current_user(self):
-        return users.get_current_user().user_id() == self.key().name()
+        if users.get_current_user():
+            return users.get_current_user().user_id() == self.key().name()
 
     def url(self):
         return '/Author/%s' % self.key().name()
@@ -100,7 +101,7 @@ class Story(db.Model):
     date = db.DateTimeProperty(auto_now_add=True, indexed=False) #not used
     favorite_count = db.IntegerProperty(default=0, indexed=False)
     author_name = db.StringProperty(required=True, indexed=False)
-    #human attribute isn't used currently, but may be useful later
+    #following used when editing nickname
     human = db.ReferenceProperty(Human, required=True,
                                  collection_name='stories')
 
@@ -253,8 +254,21 @@ class Write(BaseRequestHandler):
                 errors.append("You cannot edit this story.")
             else:
                 action = self.request.get('action')
-                if not action in ['Save Story', 'Delete']:
-                    errors.append("Story action could not be determined. Please report this problem to the website owner.")
+                if action in ['Save Story', 'Delete']:
+                    if action == 'Delete':
+                        human = Human.get_by_key_name(user.user_id())
+                        collections = Collection.get(human.collections)
+                        updated = []
+                        for collection in collections:
+                            if existing_story.key().name() in collection.stories:
+                                collection.stories.remove(existing_story.key().name())
+                                updated.append(collection)
+                        db.put(updated)
+                        existing_story.delete()
+                        self.redirect('/You')
+                        return                        
+                else:
+                    errors.append("Story action could not be determined, sorry. Please report this problem to the website owner.")
         if not self.request.get('content'):
             errors.append('Please enter a story.')
         if not errors:
@@ -289,18 +303,6 @@ class Write(BaseRequestHandler):
 
                     self.redirect(existing_story.url())
                     return
-                else: #delete
-                    human = Human.get_by_key_name(user.user_id())
-                    collections = Collection.get(human.collections)
-                    updated = []
-                    for collection in collections:
-                        if existing_story.key().name() in collection.stories:
-                            collection.stories.remove(existing_story.key().name())
-                            updated.append(collection)
-                    db.put(updated)
-                    existing_story.delete()
-                    self.redirect('/You')
-                    return
         else:
             self.generate('write.html', {
                 'errors': errors,
@@ -319,6 +321,7 @@ class HumanPage(BaseRequestHandler):
             user_id = user.user_id()
             human = Human.get_by_key_name(user_id)
             if human:
+                # what if this query only returns one collection?
                 collections = Collection.get(human.collections)
                 self.generate('human.html', {
                     'nickname': human.nickname,
@@ -421,7 +424,10 @@ class Organize(BaseRequestHandler):
         if not user:
             self.redirect(users.create_login_url(self.request.uri))
             return
+        new_col_title = cleanup(self.request.get('new-title_input'))
         human = Human.get_by_key_name(user.user_id())
+        if len(new_col_title) > 33:
+            errors.append("Please enter a collection title with 33 letters or less.")
         if not human:
             errors.append("Please write stories before making collections.")
         if not errors:
@@ -440,7 +446,7 @@ class Organize(BaseRequestHandler):
             new_col_story_list = self.request.get('new-collection_input')
             if new_col_story_list:
                 stories = [cleanup(s) for s in new_col_story_list.split(",")]
-                new_col_title = cleanup(self.request.get('new-title_input'))
+                
                 new_col_slug = slugify(unicode(new_col_title))
                 existing_col = Collection.get_by_key_name(user.user_id() + " " + new_col_slug)
                 #new collection with non-unique key name == existing collection
@@ -463,64 +469,93 @@ class Organize(BaseRequestHandler):
             self.generate('organize.html', {
                 'errors': errors,
                 })
-#########################################
-class DeleteStory(BaseRequestHandler):
+
+class EditCollection(BaseRequestHandler):
     @login_required
-    def get(self, slug):
-        user = users.get_current_user()
-        user_id = user.user_id()
-        story = Story.get_by_key_name(slug.lower())
+    def get(self):
         errors = []
-
-        if not story:
-            errors.append("Couldn't find this story. Sorry.")
+        collection = Collection.get_by_key_name(self.request.get('collection'))
+        if not collection or not collection.belongs_to_current_user():
+            errors.append("You cannot edit this collection. Sorry.")
         else:
-            if not story.belongs_to_current_user():
-                errors.append("You cannot delete this story.")
+            if collection.key().name() == users.get_current_user().user_id():
+                errors.append("This is your main collection. It cannot be deleted")
         if not errors:
-            self.generate('delete_page.html', {
-                'story': story,
+            self.generate('edit_collection.html', {
+                'collection_key': collection.key(),
+                'collection_title': collection.title,
                 })
         else:
-            self.generate('delete_page.html', {
+            self.generate('edit_collection.html', {
                 'errors': errors,
                 })
-            
     def post(self):
-        story = Story.get(self.request.get('story_key'))
-        user = users.get_current_user()
-        user_data = get_or_create_data_from_user(user)
         errors = []
+        collection = Collection.get(self.request.get('collection_key'))
+        action = self.request.get('action')
+        title = cleanup(self.request.get('collection_title'))
 
-        if not story:
-            errors.append("Couldn't find this story. Sorry.")
+        if not collection or not collection.belongs_to_current_user():
+            errors.append("You cannot edit this collection. Sorry.")
         else:
-            if not story.belongs_to_current_user():
-                errors.append("You cannot delete this story.")
-        if not errors:
-            #remove story from all of its collections
-            collections = Collection.all().ancestor(user_data).filter('stories =', story.key())
-            
-            updated = []
-            for collection in collections:
-                collection.stories.remove(story.key())
-                updated.append(collection)
-            db.put(updated)
-
-            favorited = UserData.all(keys_only=True).filter('favorite_stories =', story.key()).get()
-            
-            if favorited:
-                story.rand_id = None
-                story.put()
+            if collection.key().name() == users.get_current_user().user_id():
+                errors.append("This is your main collection. It cannot be edited.")
             else:
-                story.delete()
-                
-            self.redirect('/You')
+                if action not in ['Save Collection Title', 'Delete Collection']:
+                    errors.append("Couldn't determine collection action. Please contact website owner.")
+                else:
+                    if action == "Delete Collection":
+                        stories = collection.stories
+                        user_id = users.get_current_user().user_id()
+                        human = Human.get_by_key_name(user_id)
+                        main_col = Collection.get_by_key_name(user_id)
+                        
+                        main_col.stories.extend(stories)
+                        human.collections.remove(collection.key())
+                        db.put([main_col, human])
+                        collection.delete()
+                        self.redirect('/You')
+                        return
+        if not title:
+            errors.append("Please enter a title.")
+        if len(title) > 33:
+            errors.append("Please enter a title with 33 letters or less.")
+        if not errors:
+            stories = collection.stories
+            user_id = users.get_current_user().user_id()
+            human = Human.get_by_key_name(user_id)
+            slug = slugify(title)
+            if slug == collection.slug:
+                self.redirect('/You')
+                return
+            existing_col = Collection.get_by_key_name(user_id + ' ' + slug)
+            if not existing_col:
+                new_col = Collection(
+                    key_name = user_id + ' ' + slug,
+                    title = title,
+                    slug = slug,
+                    stories = stories)
+                new_col.put()
+                human.collections.append(new_col.key())
+                human.collections.remove(collection.key())
+                human.put()
+                collection.delete()
+                self.redirect('/You')
+            else:
+                existing_col.stories.extend(stories)
+                human.collections.remove(collection.key())
+                db.put([existing_col, human])
+                collection.delete()
+                self.redirect('/You')
         else:
-            self.generate('delete_page.html', {
+            col_key = collection.key()
+            self.generate('edit_collection.html', {
                 'errors': errors,
-                'story': story,
+                'collection_key': collection.key(),
+                'collection_title': collection.title,
                 })
+                
+                
 
 class DeleteCollection(BaseRequestHandler):
     @login_required
@@ -532,6 +567,8 @@ class DeleteCollection(BaseRequestHandler):
 
         if not collection or not collection.belongs_to_current_user():
             errors.append("You cannot delete this category.")
+            if collection.key().name() == users.get_current_user().user_id():
+                errors.append("This is your main collection. It cannot be deleted")
         if not errors:
             self.generate('delete_page.html', {
                 'category': category,
@@ -620,8 +657,7 @@ application = webapp.WSGIApplication(
      ('(?i)/You/Organize', Organize),
      ('(?i)/Author/([^/]+)/Favorites', Favorites),
      ('(?i)/Write', Write),
-     ('(?i)/Delete', DeleteStory),
-     ('(?i)/DeleteCollection', DeleteCollection),
+     ('(?i)/Edit', EditCollection),
      ('(?i)/You/EditName', EditName),
      ('/([^/]+)', StoryPage)],
     debug=True)

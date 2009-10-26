@@ -30,14 +30,18 @@ body
   :line-height 1.4em
   :font-size= 100% * 18px / 16px
   :background url(../images/bg.gif) repeat-y center top
+  ul
+    :list-style-type none
+    :list-style-position inside
   a
     :color #666
   a:hover
     :color #222
   a.action
     :text-decoration none
+    :font-size 90%
   a.action:hover
-    :color #060
+    :color #930
 .container
   +container
 .nav, .header, .content, .footer
@@ -65,9 +69,8 @@ body
     :border 1px solid #ccc
     :color #930
   .page_helper
-    :color #ccc
+    :color #bbb
     :float right
-    :font-size 90%
     :padding .25em 8px 0 0
     a
       :text-decoration none
@@ -96,6 +99,39 @@ body
   .content_author
     :text-align right
     :margin-right 2em
+  .story_group
+    :margin-bottom 10px
+    :color #bbb
+    h2
+      :display inline
+    li
+      :margin-left 1em
+      a.story_title
+        :color #222
+      a.story_title:hover
+        :color #666
+    .collection_header
+      h2
+        a
+          :color #930
+        a:hover
+          :color #049
+    .favorites_header
+      h2
+        a
+          :color green
+        a:hover
+          :color blue
+  .story_form
+    .title
+      :font-family Georgia
+    .form_note
+      :float right
+      :font-size 90%
+      :padding-right 30px
+      :color #666
+    textarea
+      :margin-bottom 1.5em
   #collections_container
     +column(6)
     +append(1)
@@ -116,8 +152,6 @@ body
     #new-collection
       :background white url(../images/draghere.png) no-repeat center center
   .collection
-    :list-style-type none
-    :list-style-position inside
     :margin .4em 0 .4em .4em
     :min-height 1.5em
     :line-height 1.5em
@@ -144,37 +178,6 @@ body
   #collection_form_container
     +column(!blueprint_grid_columns)
     :padding-top 2em
-  .story_list
-    :list-style none
-    li
-      :margin-left 1em
-    h2
-      :margin-left 7px
-      :margin-top .5em
-      a.category_name
-        :color #930
-        :font-size 110%
-      a.favorites_header
-        :color #222
-        :font-size 120%
-        :margin-left -7px
-        :letter-spacing 1px
-      .view_all_link
-        :font-size 80%
-        :float right
-        a
-          :text-decoration none
-          :text-transfrom uppercase
-  .story_form
-    .title
-      :font-family Georgia
-    .form_note
-      :float right
-      :font-size 90%
-      :padding-right 30px
-      :color #666
-    textarea
-      :margin-bottom 1.5em
 .footer
   :text-transform uppercase
   :border-top 1px dotted #aaa
