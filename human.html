@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if nickname %}{{ nickname }}{% else %}No author{% endif %} | 
+{{ nickname }} | 
 {% endblock %}
 
 {% block page_title %}
-{% if nickname %}{{ nickname }}{% else %}No author{% endif %}
+{{ nickname }}
 {% endblock %}
 
 {% block page_helper %}
@@ -24,22 +24,8 @@
 <div class="content_text">
 {% if collections %}
 {% for collection in collections %}
-  {% if not collection.title or collections|length_is:"1" %}
-  {# collection with no title is main collection; display all stories #}
   <div class="story_group">
-    <ul>
-      {% for story_slug in collection.stories %}
-      <li>
-        <a href="/{{ story_slug|title }}" class="story_title">{{ story_slug|title_from_slug }}</a>
-        {% if human and human.belongs_to_current_user %}
-        | <a href="/Write?story={{ story_slug|title }}" class="action" >edit</a>
-        {% endif %}
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% else %}{# display five stories for collections other than main #}
-  <div class="story_group">   
+    {% ifnotequal collection.key.name "main-collection" %}
     <div class="collection_header">
       <h2><a href="{{ collection.url }}" class="collection_title">{{ collection.title|title }}</a></h2>
       {% if human and human.belongs_to_current_user %}
@@ -47,8 +33,9 @@
       {% endif %}
       | <a href="{{ collection.url }}" class="action">view</a>
     </div>
+    {% endifnotequal %}
     <ul>
-      {% for story_slug in collection.stories|slice:":5" %}
+      {% for story_slug in collection.profile_stories %}
       <li>
         <a href="/{{ story_slug|title }}" class="story_title">{{ story_slug|title_from_slug }}</a>
         {% if human and human.belongs_to_current_user %}
@@ -56,14 +43,13 @@
         {% endif %}
       </li>
       {% endfor %}
-    </ul>
+    </ul>    
   </div>
-  {% endif %}{# end of if not collection.title #}
-{% endfor %}{# end of for collection #}
+{% endfor %}{# end for collection #}
   {% if favorite_stories or favorite_collections %}
   <hr />
   {% endif %}
-{% endif %}{# end of if collections #}
+{% endif %}{# end if collections #}
 {# FAVORITES #}
 {% if favorite_stories %}
 {% for story_slug in favorite_stories %}

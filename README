@@ -1,13 +1,24 @@
-I've always loved true stories. So I made Storylog, a place
-where they can live happily ever after.
+          ______ __  __         __  __  
+         (   /  /  )/__)(__//  /  )/ _  
+        __) (  (__// (   / (__(__/(__) 
 
-Back when I was in high school the original LowBrow.com was
-still up. It was a collection of "the best user submitted 
-content about scraping the bottom and being a general piece 
-of shit." 50,000 captivating, self-deprecating mini stories.
+                        http://www.storylog.com/
 
-Storylog isn't a replacement for LowBrow 1.0 and it doesn't
-have the same goal, but it wouldn't be around if LowBrow had
-never existed.
 
-I just want to spread around some good, authentic writing.
+Storylog aggregates user-submitted true stories.
+
+Designed to be readable, easy to use, browsable.
+
+Aims to promote consistently great storytelling.
+
+
+Technology:
+    Google App Engine
+    webapp framework
+    django template
+    jquery library
+    another thing
+    Python 2.5.4 
+    compass css
+
+Inspired by: Lowbrow.com 1.0 (closed early 2006)

@@ -80,7 +80,7 @@ body a.action:hover { color: #930; }
 .content .story_group li a.story_title { color: #222; }
 .content .story_group li a.story_title:hover { color: #666; }
 .content .story_group .collection_header h2 a { color: #930; }
-.content .story_group .collection_header h2 a:hover { color: #049; }
+.content .story_group .collection_header h2 a:hover { color: #666; }
 .content .story_group .favorites_header h2 a { color: green; }
 .content .story_group .favorites_header h2 a:hover { color: blue; }
 .content .story_form .title { font-family: Georgia; }
@@ -94,7 +94,7 @@ body a.action:hover { color: #930; }
 * html .content #new_collection_container { overflow-x: hidden; }
 .content #new_collection_container h3 { font-weight: bold; height: 1.7em; }
 .content #new_collection_container h3 input { width: 97%; font: 1em Georgia; color: #900; }
-.content #new_collection_container #new-collection { background: white url(../images/draghere.png) no-repeat center center; }
+.content #new_collection_container #new_collection { background: white url(../images/draghere.png) no-repeat center center; }
 .content .collection { margin: .4em 0 .4em .4em; min-height: 1.5em; line-height: 1.5em; border: 1px solid gray; background-color: gray; }
 .content .collection .sort_placeholder { background-color: #CDE7CD; }
 .content .collection li { color: #222; padding-left: .4em; height: 1.5em; overflow: hidden; white-space: nowrap; background-color: #F2F2E1; margin-bottom: 1px; margin-right: 1px; }

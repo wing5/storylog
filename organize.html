@@ -6,21 +6,21 @@
 <script type="text/javascript" src="/js/ui.sortable.js"></script> 
 <script type="text/javascript">
     $(document).ready(function(){
-        $("#new-collection").css({'min-height': $("#collections_container").height()-47 });        
+        $("#new_collection").css({'min-height': $("#collections_container").height()-47 });        
 
         {% for collection in collections %}
-        $("#{{ collection.html_title }}").sortable({
+        $("#{{ collection.key.name }}").sortable({
             connectWith: '.collection',
             placeholder: 'sort_placeholder',
         });
         {% endfor %}
-        $("#new-collection").sortable({
+        $("#new_collection").sortable({
             connectWith: '.collection',
             placeholder: 'sort_placeholder',
             update: function() {
                 $("#new_collection_container ul").css("background","#ffffff");
-                if ($("#new_collection_container h3").text() == "New Collection") { $("#new_collection_container h3").html("<input id='new-title' maxlength='33' value='Collection Title' />") };
-                $("#new-title").focus(function() {
+                if ($("#new_collection_container h3").text() == "New Collection") { $("#new_collection_container h3").html("<input id='new_title' maxlength='33' value='Collection Title' />") };
+                $("#new_title").focus(function() {
                     if( this.value == this.defaultValue ) {
                         this.value = "";
                     }
@@ -36,10 +36,10 @@
 
         $("#collection_form").submit(function() {
             {% for collection in collections %}
-            $("#{{ collection.html_title }}_input").val( $("#{{ collection.html_title }}").sortable('toArray') );
+            $("#{{ collection.key.name }}_input").val( $("#{{ collection.key.name }}").sortable('toArray') );
             {% endfor %}
-            $("#new-collection_input").val( $("#new-collection").sortable('toArray') );
-            $("#new-title_input").val( $("#new-title").val() );
+            $("#new_collection_input").val( $("#new_collection").sortable('toArray') );
+            $("#new_title_input").val( $("#new_title").val() );
         });
 
         $(".collection li").mousedown(function() {
@@ -66,8 +66,8 @@ Organize Collections
 {% if human %}
 <div id="collections_container">
   {% for collection in collections %}
-  <h3>{{ collection.display_title }}</h3>
-  <ul id="{{ collection.html_title }}" class="collection">
+  <h3>{{ collection.title }}</h3>
+  <ul id="{{ collection.key.name }}" class="collection">
     {% for story_slug in collection.stories %}
     <li id="{{ story_slug }}">{{ story_slug|title_from_slug }}</li>
     {% endfor %}
@@ -76,17 +76,17 @@ Organize Collections
 </div>
 <div id="new_collection_container">
   <h3>New Collection</h3>
-  <ul id="new-collection" class="collection">
+  <ul id="new_collection" class="collection">
   </ul>
 </div>
 
 <div id="collection_form_container">
   <form action="/You/Organize" id="collection_form" method="post">
     {% for collection in collections %}
-    <input type="hidden" name="{{ collection.html_title }}_input" id="{{ collection.html_title }}_input" />
+    <input type="hidden" name="{{ collection.key.name }}_input" id="{{ collection.key.name }}_input" />
     {% endfor %}
-    <input type="hidden" name="new-title_input" id="new-title_input" />
-    <input type="hidden" name="new-collection_input" id="new-collection_input" />
+    <input type="hidden" name="new_title_input" id="new_title_input" />
+    <input type="hidden" name="new_collection_input" id="new_collection_input" />
     <input type="submit" value="Save Collections" />
   </form>
 </div>

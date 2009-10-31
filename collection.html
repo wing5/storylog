@@ -1,18 +1,14 @@
-{% extends "author_page.html" %}
+{% extends "human.html" %}
 
-{% block header_title %}<a href="/Author/{{ author.key.name }}">Return to {{ author.name }}</a>{% endblock %}
+{% block main_nav %}<a href="{{ human.url }}">RETURN TO AUTHOR PAGE</a>{% endblock %}
 
 {% block page_title %}
-{% spaceless %}
-  {% for category in categories %}
-  {{ category.name }}
-  {% endfor %}
-{% endspaceless %}
+{% for collection in collections %}
+{{ collection.title }}
+{% endfor %}
 {% endblock %}
 
-
-{% block category_header %}
-{{ category.name|title }}
+{% block page_helper %}
 {% endblock %}
-
-{% block favorites_list %}{% endblock %}
+{% block page_actions %}
+{% endblock %}
