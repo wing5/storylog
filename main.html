@@ -20,14 +20,12 @@
 {% block page_actions %}{% endblock %}
 
 {% block content %}
-<div class="content_text">
-  {{ story.content|linebreaks }}
-  <h2 class="content_author">
-    {% if not story.belongs_to_current_user %}
-    <a href="{{ story.author_url }}">{{ story.author_name }}</a>
-    {% else %}
-    <a href="/You">{{ story.author_name }}</a>
-    {% endif %}
-  </h2>
-</div>
+{{ story.content|linebreaks }}
+<h2 class="content_author">
+  {% if not story.belongs_to_current_user %}
+  <a href="{{ story.author_url }}">{{ story.author_name }}</a>
+  {% else %}
+  <a href="/You">{{ story.author_name }}</a>
+  {% endif %}
+</h2>
 {% endblock %}

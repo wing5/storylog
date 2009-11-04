@@ -47,7 +47,7 @@ body a:hover { color: #222; }
 body a.action { text-decoration: none; font-size: 90%; }
 body a.action:hover { color: #930; }
 
-.container { width: 510px; margin: 0 auto; overflow: hidden; display: inline-block; }
+.container { width: 510px; margin: 0 auto; overflow: hidden; display: inline-block; text-align: left; }
 .container { display: block; }
 
 .nav, .header, .content, .footer { display: inline; float: left; margin-right: 0; width: 510px; }
@@ -62,7 +62,7 @@ body a.action:hover { color: #930; }
 .nav .nav_links li.last { padding-right: 0px; }
 
 .header { position: relative; padding-bottom: 1.5em; }
-.header .errors { padding: 10px 10px 10px 30px; font-size: 90%; background-color: #fff; margin-bottom: 1em; border: 1px solid #ccc; color: #930; }
+.header .errors { padding: 10px 10px 10px 30px; background-color: #fff; margin-bottom: 1em; border: 1px solid #ccc; color: #930; list-style-type: disc; list-style-position: outside; }
 .header .page_helper { color: #bbb; float: right; padding: .25em 8px 0 0; }
 .header .page_helper a { text-decoration: none; }
 .header .page_helper a:hover { color: #930; }
@@ -86,22 +86,19 @@ body a.action:hover { color: #930; }
 .content .story_form .title { font-family: Georgia; }
 .content .story_form .form_note { float: right; font-size: 90%; padding-right: 30px; color: #666; }
 .content .story_form textarea { margin-bottom: 1.5em; }
-.content #collections_container { display: inline; float: left; margin-right: 10px; width: 230px; padding-right: 40px; }
-* html .content #collections_container { overflow-x: hidden; }
-.content #collections_container h3 { font-weight: bold; height: 1.7em; }
-.content #collections_container ul { background-color: gray; }
-.content #new_collection_container { display: inline; float: left; margin-right: 0; width: 230px; }
-* html .content #new_collection_container { overflow-x: hidden; }
-.content #new_collection_container h3 { font-weight: bold; height: 1.7em; }
-.content #new_collection_container h3 input { width: 97%; font: 1em Georgia; color: #900; }
-.content #new_collection_container #new_collection { background: white url(../images/draghere.png) no-repeat center center; }
-.content .collection { margin: .4em 0 .4em .4em; min-height: 1.5em; line-height: 1.5em; border: 1px solid gray; background-color: gray; }
+.content #left_column { display: inline; float: left; margin-right: 10px; width: 230px; margin-right: 40px; }
+* html .content #left_column { overflow-x: hidden; }
+.content #left_column h3 { font-weight: bold; height: 1.7em; }
+.content #right_column { display: inline; float: left; margin-right: 0; width: 230px; }
+* html .content #right_column { overflow-x: hidden; }
+.content #right_column h3 { font-weight: bold; height: 1.7em; }
+.content #right_column h3 input { font: 1em Georgia; color: #900; }
+.content #right_column #new_collection { background: white url(../images/draghere.png) no-repeat center center; }
+.content .collection { margin: 0.25em 0 1em .5em; min-height: 1.5em; line-height: 1.5em; border: 1px solid gray; background-color: gray; }
 .content .collection .sort_placeholder { background-color: #CDE7CD; }
-.content .collection li { color: #222; padding-left: .4em; height: 1.5em; overflow: hidden; white-space: nowrap; background-color: #F2F2E1; margin-bottom: 1px; margin-right: 1px; }
+.content .collection li { color: #222; padding-left: .4em; height: 1.5em; overflow: hidden; white-space: nowrap; background-color: #F2F2E1; margin: 0 1px 1px 0; }
 .content .collection li:hover { background-color: #C99; cursor: url(../images/grab.cur), default; }
 .content .collection li.grabbed { cursor: url(../images/grabbing.cur), default; }
-.content #collection_form { text-align: center; }
-.content #collection_form_container { display: inline; float: left; margin-right: 10px; width: 510px; padding-top: 2em; }
-* html .content #collection_form_container { overflow-x: hidden; }
+.content #organize_form { clear: both; padding-top: 2em; text-align: center; }
 
 .footer { text-transform: uppercase; border-top: 1px dotted #aaa; text-align: center; font-size: 70%; letter-spacing: 1px; padding-top: .5em; }

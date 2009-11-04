@@ -1,6 +1,7 @@
 import os
 import re
 from utils import slugify, cleanup
+from config import error, STORY_LENGTH, COL_LENGTH, USER_LENGTH
 from random import random
 import itertools
 import functools
@@ -13,16 +14,12 @@ from google.appengine.ext import db
 
 webapp.template.register_template_library( 'utils.templatefilters')
 
-TITLE_LENGTH = 35
-
 class NotUniqueError(Exception):
     """Raised by Story.make_unique_slug if slug isn't unique."""
 
 class Human(db.Model):
     """key_name = user_id"""
     nickname = db.StringProperty(required=True, indexed=False)
-    favorite_stories = db.StringListProperty(indexed=False) #list of slugs
-    favorite_collections = db.StringListProperty(indexed=False) #list of slugs
     collections = db.StringListProperty(indexed=False) #list of slugs
 
     def belongs_to_current_user(self):
@@ -60,6 +57,20 @@ def human_and_collection_from_user(user):
     else:
         return human, Collection.get_by_key_name('main-collection', parent = human)
 
+def human_needed(method):
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        user = users.get_current_user()
+        if not user:
+            self.redirect(users.create_login_url(self.request.uri))
+            return
+        human = Human.get_by_key_name(user.user_id())
+        if not human:
+            self.error(403)
+            return
+        return method(self, human, *args, **kwargs)
+    return wrapper
+
 class Collection(db.Model):
     """
     key_name = collection_slug
@@ -68,9 +79,7 @@ class Collection(db.Model):
     user = db.UserProperty(auto_current_user_add=True, indexed=False)
     title = db.StringProperty(indexed=False, required=True)
     stories = db.StringListProperty(indexed=False) #list of slugs, should index?
-    favorite_count = db.IntegerProperty(default=0, indexed=False)
-
-
+    fav_count = db.IntegerProperty(default=0, indexed=False)
 
     def profile_stories(self):
         if self.key().name() == 'main-collection':
@@ -87,23 +96,15 @@ class Collection(db.Model):
     def belongs_to_current_user(self):
         return users.get_current_user() == self.user
 
-    def favorited_by_current_user(self):
-        user = users.get_current_user()
-        if user:
-            return UserFavorite.get_by_key_name(user.user_id(), parent=self)
-
 class Story(db.Model):
     """key_name = story_slug""" 
-    user = db.UserProperty(auto_current_user_add=True, indexed=False)
+    user = db.UserProperty(auto_current_user_add=True)
     title = db.StringProperty(required=True, indexed=False)
     content = db.TextProperty(required=True)
     rand_id = db.FloatProperty(indexed=True)
     date = db.DateTimeProperty(auto_now_add=True, indexed=False) #not used
-    favorite_count = db.IntegerProperty(default=0, indexed=False)
-    author_name = db.StringProperty(required=True, indexed=False)
-    #following used when editing nickname
-    human = db.ReferenceProperty(Human, required=True,
-                                 collection_name='stories')
+    fav_count = db.IntegerProperty(required=True, default=0, indexed=False)
+    author_name = db.StringProperty(indexed=False)
 
     def author_url(self):
         return '/Author/%s' % (self.user.user_id())
@@ -118,9 +119,7 @@ class Story(db.Model):
         return users.get_current_user() == self.user
 
     def favorited_by_current_user(self):
-        user = users.get_current_user()
-        if user:
-            return UserFavorite.get_by_key_name(user.user_id(), parent=self)
+        return False
 
     @staticmethod
     def make_unique_slug(title):
@@ -130,7 +129,7 @@ class Story(db.Model):
         """
         story_slug = slugify(title)
         story = Story.get_by_key_name(story_slug)
-        if not story:
+        if story_slug and not story:
             return story_slug
         else:
             raise NotUniqueError
@@ -143,16 +142,6 @@ class FavoriteIndex(db.Model):
     parent = story or collection
     """
     favorited_by = db.StringListProperty() #list of uids
-
-class UserFavorite(db.Model):
-    """
-    To see if an item has been favorited.
-
-    key_name = user_id
-    parent = story or collection
-    """
-    pass
-
 
 class BaseRequestHandler(webapp.RequestHandler):
     def generate(self, template_name, template_values={}):
@@ -171,6 +160,12 @@ class BaseRequestHandler(webapp.RequestHandler):
         values.update(template_values)
         path = os.path.join(os.path.dirname(__file__), template_name)
         self.response.out.write(template.render(path, values))
+        
+    def request_clean(self, input_name, max_length = None):
+        if max_length:
+            return cleanup(self.request.get(input_name))[:max_length]
+        else:
+            return cleanup(self.request.get(input_name))
 
 class MainPage(BaseRequestHandler):
     def get(self):
@@ -181,12 +176,12 @@ class MainPage(BaseRequestHandler):
 
 class StoryPage(BaseRequestHandler):
     def get(self, slug):
-        # all incoming urls should be made lowercase
-        story = Story.get_by_key_name(slug.lower())
+        slug = slug.lower() #lowercase incoming 
+        story = Story.get_by_key_name(slug)
         errors = []
        
         if not story:
-            errors.append("Couldn't find this story. Sorry.")
+            errors.append(error['story?'])
         if not errors:
             self.generate('story.html', {
                 'story': story,
@@ -196,121 +191,114 @@ class StoryPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
-class Write(BaseRequestHandler):
-    #Author created here or w/ EditAuthorAction or w/ FavoriteStoryAction
+class NewStory(BaseRequestHandler):
     @login_required
     def get(self):
+        self.generate('edit_story.html')
+        
+    def post(self):
         errors = []
 
-        story_slug = self.request.get('story')
+        title = self.request_clean('title', STORY_LENGTH)
+        try:
+            slug = Story.make_unique_slug(title)
+        except NotUniqueError:
+            errors.append(error['unique'])
+        if slug in ['you', 'new']:
+            errors.append(error['unique'])
 
-        if not story_slug:
-            self.generate('write.html')
-            return
+        content = self.request_clean('content')
+        if not content:
+            errors.append(error['content'])
+
+        if not errors:
+            user = users.get_current_user()
+            human, collection = human_and_collection_from_user(user)
+
+            rand_id = random()
+            if not Story.all().get():
+                rand_id = 1.0
+
+            story = Story(
+                key_name = slug,
+                title = title,
+                content = db.Text(content),
+                rand_id = rand_id,
+                author_name = human.nickname)
+
+            collection.stories.append(slug)
+            db.put([story, collection])
+            self.redirect(story.url())
         else:
-            #all incoming urls should be made lowercase
-            story = Story.get_by_key_name(story_slug.lower())
+            self.generate('edit_story.html', {
+                'errors': errors,
+                'title': title,
+                'content': content,
+                })
 
-            if not story:
-                errors.append("Couldn't find this story. Sorry.")
-            else:
-                if not story.belongs_to_current_user():
-                    errors.append("You cannot edit this story.")
+class EditStory(BaseRequestHandler):
+    @login_required
+    def get(self, slug):
+        errors = []
+
+        story = Story.get_by_key_name(slug.lower()) #lowercase
+        if not story:
+            errors.append(error['story'])
+        elif not story.belongs_to_current_user():
+            errors.append(error['story access'])
+        if not errors:
+            self.generate('edit_story.html', {
+                'slug': slug.lower(),
+                'title': story.title,
+                'content': story.content,
+                })
+        else:
+            self.generate('edit_story.html', {
+                'errors': errors,
+                })
+    def post(self, slug):
+        story = Story.get_by_key_name(self.request.get('slug').lower())
+        if not story or not story.belongs_to_current_user():
+            self.error(403)
+            return
+        action = self.request.get('action')
+        if not action in ['Save Story', 'Delete']:
+            self.error(403)
+            return
+        if action == 'Delete':
+            uid = users.get_current_user().user_id()
+            human = human.get_by_key_name(uid)
+            collections = human.get_collections()
+            updated = []
+            for col in collections:
+                if story.key().name() in col.stories:
+                    col.stories.remove(story)
+                    updated.append(col)
+            db.put(updated)
+            story.delete()
+            self.redirect('/You')
+        else: #Save Story
+            errors = []
+            content = self.request_clean('content')
+            if not content:
+                errors.append(error['content'])
             if not errors:
-                story_key = story.key()
-                title = story.title
-                content = story.content
-            
-                self.generate('write.html', {
-                    'story_key': story_key,
+                story.content = db.Text(content)
+                story.put()
+                self.redirect(story.url())
+            else:
+                self.generate('edit_story.html', {
+                    'errors': errors,
+                    'slug': slug,
                     'title': title,
                     'content': content,
                     })
-            else:
-                self.generate('write.html', {
-                    'errors': errors,
-                    })
             
-    def post(self):
-        errors = []
-        
-        user = users.get_current_user()
-        story_key = self.request.get('story_key')
-
-        if not story_key:
-            title = cleanup(self.request.get('title'))
-            if title:
-                if len(title) > 35:
-                    errors.append("Please enter a title with 35 letters or less.")
-                try:
-                    slug = Story.make_unique_slug(title)
-                except NotUniqueError:
-                    errors.append("Please change your story's title. Someone else has already chosen a very similar title.")
-            else:
-                errors.append('Please enter a title.')
-        else:
-            existing_story = Story.get(story_key)
-            if not existing_story or not existing_story.belongs_to_current_user():
-                errors.append("You cannot edit this story.")
-            else:
-                action = self.request.get('action')
-                if action in ['Save Story', 'Delete']:
-                    if action == 'Delete':
-                        human = Human.get_by_key_name(user.user_id())
-                        collections = human.get_collections()
-                        updated = []
-                        for collection in collections:
-                            if existing_story.key().name() in collection.stories:
-                                collection.stories.remove(existing_story.key().name())
-                                updated.append(collection)
-                        db.put(updated)
-                        existing_story.delete()
-                        self.redirect('/You')
-                        return                        
-                else:
-                    errors.append("Story action could not be determined, sorry. Please report this problem to the website owner.")
-        if not self.request.get('content'):
-            errors.append('Please enter a story.')
-        if not errors:
-            content = db.Text(cleanup(self.request.get('content')))
-            if not story_key:
-                human, collection = human_and_collection_from_user(user)
-                
-                #change this rand_id handling before launch
-                rand_id = random()
-                if not Story.all(keys_only=True).get():
-                    rand_id = 1.0
-                    
-                story = Story(
-                    key_name = slug,
-                    title = title,
-                    content = content,
-                    rand_id = rand_id,
-                    author_name = human.nickname,
-                    human = human)
-
-                collection.stories.append(slug)
-
-                db.put([story, collection])
-
-                self.redirect(story.url())
-                return
-            else:
-                if action == "Save Story":
-                    existing_story.content = content
-                    existing_story.put()
-
-                    self.redirect(existing_story.url())
-                    return
-        else:
-            self.generate('write.html', {
-                'errors': errors,
-                'story_key': story_key,
-                'title': self.request.get('title'),
-                'content': self.request.get('content'),
-                })
-
 class HumanPage(BaseRequestHandler):
+    """Handles both:
+    * Public-facing profile:  /Author/{{ uid }}
+    * Current author's page:  /You
+    """
     def get(self, user_id = None):
         if not user_id:
             user = users.get_current_user()
@@ -335,7 +323,7 @@ class HumanPage(BaseRequestHandler):
             errors = []
 
             if not human:
-                errors.append("This is not a valid author page. Sorry.")
+                errors.append(error['author?'])
             if not errors:
                 collections = human.get_collections()
                 self.generate('human.html', {
@@ -352,34 +340,22 @@ class HumanPage(BaseRequestHandler):
 class EditName(BaseRequestHandler):
     @login_required
     def get(self):
-        errors = []
         user_id = users.get_current_user().user_id()
         human = Human.get_by_key_name(user_id)
         if not human:
-            errors.append("You can't change your name before writing a story.")
-        if not errors:
-            self.generate('edit_name.html', {
-                'human': human,
-                })
+            self.error(403)
             return
-        else:
-            self.generate('edit_name.html', {
-                'errors': errors,
-                })
-        
-    def post(self):
-        human = Human.get(self.request.get('human_key'))
-        nickname = cleanup(self.request.get('nickname'))
-        errors = []
+        self.generate('edit_name.html', {
+            'human': human,
+            })
 
+    @human_needed
+    def post(self, human):
         if not nickname:
-            errors.append('Please enter a name.')
-        if not len(nickname) < 24:
-            errors.append('Please enter a name with 23 letters or less.')
-        if not human or not  human.belongs_to_current_user():
-            errors.append("You cannot edit this user. Sorry.")
+            errors.append(error['nickname'])
         if not errors:
-            stories = human.stories.fetch(1000)
+            user = users.get_current_user()
+            stories = Story.all().filter('user =', user).fetch(1000)
             updated = []
             for story in stories:
                 story.author_name = nickname
@@ -388,27 +364,11 @@ class EditName(BaseRequestHandler):
             updated.append(human)
             db.put(updated)
             self.redirect('/You')
-            return
         else:
             self.generate('edit_name.html', {
                 'human': human,
                 'errors': errors,
                 })
-
-def human_needed(method):
-    @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
-        user = users.get_current_user()
-        if not user:
-            self.redirect(users.create_login_url(self.request.uri))
-            return
-        human = Human.get_by_key_name(user.user_id())
-        if not human:
-            self.error(403)
-            return
-        return method(self, human, *args, **kwargs)
-    return wrapper
-
 
 class Organize(BaseRequestHandler):
     @login_required
@@ -433,12 +393,11 @@ class Organize(BaseRequestHandler):
 
     @human_needed
     def post(self, human):
-        stories_new_string = cleanup(self.request.get('new_collection_input'))
+        stories_new_string = cleanup(self.request.get('new'))
         stories_new = stories_new_string.split(',')
-        title_new_long = cleanup(self.request.get('new_title_input'))
-        title_new = title_new_long[:TITLE_LENGTH]
+        title_new = self.request_clean('new_title', COL_LENGTH)
         slug_new = slugify(title_new)
-        if not title_new or not slug_new:
+        if not slug_new:
             title_new = "Collection Title"
             slug_new = "collection-title"
 
@@ -449,122 +408,117 @@ class Organize(BaseRequestHandler):
         all_stories_new = [] #list of story slugs
         updated_collections = [] #list of Collection instances
         for collection in collections_current:
-            arg = collection.key().name() + '_input'
-            stories_string = cleanup(self.request.get(arg))
+            stories_string = cleanup(self.request.get(collection.key().name()))
             stories = stories_string.split(',')
             valid_stories = [s for s in stories if s in all_stories]
             collection.stories = valid_stories
             updated_collections.append(collection)
             all_stories_new.extend(valid_stories)
 
-        #why check for missing stories? just in case something goes wrong
         valid_stories_new = [s for s in stories_new if s in all_stories]
         all_stories_new.extend(valid_stories_new)
+        #why check for missing stories? in case something goes wrong!!
         missing_stories = all_stories.difference(all_stories_new)
-        updated_collections[0].stories.extend(missing_stories) #main collection
-        
-        if slug_new not in human.collections:
-            human.collections.append(slug_new)
-            collection_new  = Collection(
-                parent = human,
-                key_name = slug_new,
-                title = title_new,
-                stories = valid_stories_new)
-            updated_collections.extend([human, collection_new])
-            db.put(updated_collections)
+        #main collection gets missing stories:
+        updated_collections[0].stories.extend(missing_stories) 
+
+        if valid_stories_new:
+            if slug_new not in human.collections:
+                human.collections.append(slug_new)
+                collection_new  = Collection(
+                    parent = human,
+                    key_name = slug_new,
+                    title = title_new,
+                    stories = valid_stories_new)
+                updated_collections.extend([human, collection_new])
+                db.put(updated_collections)
+            else:
+                index = human.collections.index(slug_new)
+                updated_collections[index].stories.extend(valid_stories_new)
+                db.put(updated_collections)
         else:
-            index = human.collections.index(slug_new)
-            updated_collections[index].stories.extend(valid_stories_new)
             db.put(updated_collections)
     
         self.redirect('/You')
 
 class EditCollection(BaseRequestHandler):
     @login_required
-    def get(self):
+    def get(self, slug):
         errors = []
         human = Human.get_by_key_name(users.get_current_user().user_id())
         if human:
-            name = self.request.get('collection')
-            collection = Collection.get_by_key_name(name, parent=human)
-        if not human or not collection or not collection.belongs_to_current_user():
-            errors.append("You cannot edit this collection. Sorry.")
-        else:
-            if collection.key().name() == 'main-collection':
-                errors.append("This is your main collection. It cannot be deleted")
+            slug = slug.lower()
+            collection = Collection.get_by_key_name(slug, parent=human)
+        elif not collection.belongs_to_current_user():
+            errors.append(error['collection access'])
+        elif collection.key().name() == 'main-collection':
+            errors.append(error['main collection'])
         if not errors:
             self.generate('edit_collection.html', {
-                'collection_key': collection.key(),
-                'collection_title': collection.title,
+                'slug': collection.key().name(),
+                'title': collection.title,
                 })
         else:
             self.generate('edit_collection.html', {
                 'errors': errors,
                 })
     @human_needed
-    def post(self, human):
+    def post(self, human, slug):
         errors = []
-        collection = Collection.get(self.request.get('collection_key'))
+        slug = self.request.get('slug')
+        collection = Collection.get_by_key_name(slug, parent = human)
+        title = self.request_clean('title', COL_LENGTH)
+        slug = slugify(unicode(title))
         action = self.request.get('action')
-        title = cleanup(self.request.get('collection_title'))
-        slug = slugify(title)
-
+        if action not in ['Save Collection Title', 'Delete Collection']:
+            self.error(403)
+            return
         if not collection or not collection.belongs_to_current_user():
-            errors.append("You cannot edit this collection. Sorry.")
-        else:
-            if collection.key().name() == 'main-collection':
-                errors.append("This is your main collection. It cannot be edited.")
-            else:
-                if action not in ['Save Collection Title', 'Delete Collection']:
-                    errors.append("Couldn't determine collection action. Please contact website owner.")
-                else:
-                    if action == "Delete Collection":
-                        stories = collection.stories
-                        main_col = Collection.get_by_key_name('main-collection', parent=human)
-                        main_col.stories.extend(stories)
-                        human.collections.remove(collection.key().name())
-                        db.put([main_col, human])
-                        collection.delete()
-                        self.redirect('/You')
-                        return
-        if not title:
-            errors.append("Please enter a title.")
-        if len(title) > 33:
-            errors.append("Please enter a title with 33 letters or less.")
-        if not slug:
-            errors.append("Please enter a title with at least one letter or number in it.")
+            errors.append(error['collection access'])
+        elif collection.key().name() == 'main-collection':
+            errors.append(error['main collection'])
+        if action == "Save Collection Title":
+            if not title:
+                errors.append(error['title'])
+            elif not slug:
+                errors.append(error['slug'])
         if not errors:
-            stories = collection.stories
-            if slug == collection.key().name():
+            if action == "Delete Collection":
+                main= Collection.get_by_key_name('main-collection',parent=human)
+                main.stories.extend(collection.stories)
+                human.collections.remove(collection.key().name())
+                db.put([main, human])
+                collection.delete()
                 self.redirect('/You')
                 return
-            existing_col = Collection.get_by_key_name(slug, parent=human)
-            if not existing_col:
-                new_col = Collection(
-                    parent = human,
-                    key_name = slug,
-                    title = title,
-                    stories = stories)
-                human.collections.append(slug)
-                human.collections.remove(collection.key().name())
-                db.put([new_col, human])
-                collection.delete()
-                self.redirect('/You')
             else:
-                existing_col.stories.extend(stories)
-                human.collections.remove(collection.key().name())
-                db.put([existing_col, human])
-                collection.delete()
-                self.redirect('/You')
-        else:
-            col_key = collection.key()
+                if slug == collection.key().name():
+                    self.redirect('/You')
+                existing_col = Collection.get_by_key_name(slug, parent=human)
+                if not existing_col:
+                    new_col = Collection(
+                        parent = human,
+                        key_name = slug,
+                        title = title,
+                        stories = collection.stories)
+                    human.collections.append(slug)
+                    human.collections.remove(collection.key().name())
+                    db.put([new_col, human])
+                    collection.delete()
+                    self.redirect('/You')
+                else:
+                    existing_col.stories.extend(collection.stories)
+                    human.collections.remove(collection.key().name())
+                    db.put([existing_col, human])
+                    collection.delete()
+                    self.redirect('/You')
+        else: #errors
             self.generate('edit_collection.html', {
                 'errors': errors,
-                'collection_key': collection.key(),
-                'collection_title': collection.title,
+                'slug': slug,
+                'title': title,
                 })
                 
-#####                
 class CollectionPage(BaseRequestHandler):
     def get(self, user_id, slug):
         human = Human.get_by_key_name(user_id)
@@ -572,9 +526,9 @@ class CollectionPage(BaseRequestHandler):
         errors = []
 
         if not human:
-            errors.append("This is not a valid Author page. Sorry.")
+            errors.append(error['author'])
         if not collection:
-            errors.append("This is not a valid Collection page. Sorry.")
+            errors.append(error['collection'])
         if not errors:
             if collection.key().name() == 'main-collection':
                 self.redirect(human.url())
@@ -589,7 +543,7 @@ class CollectionPage(BaseRequestHandler):
             self.generate('collection.html', {
                 'errors': errors,
                 })
-
+###
 class Favorites(BaseRequestHandler):
     def get(self, user_id):
         author = Author.get_by_key_name(user_id)
@@ -608,18 +562,19 @@ class Favorites(BaseRequestHandler):
 
 
 
-# be careful if you want to rearrange the pages: make sure the urls
+# be careful if you want to rearrange these pages: make sure the urls
 # with the broader matches go toward the bottom
 application = webapp.WSGIApplication(
     [('/', MainPage),
+     ('(?i)/New', NewStory),
+     ('(?i)/Edit/([^/]+)', EditStory),     
      ('(?i)/You', HumanPage),
-     ('(?i)/Author/([^/]+)', HumanPage),
-     ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),
      ('(?i)/You/Organize', Organize),
-     ('(?i)/Author/([^/]+)/Favorites', Favorites),
-     ('(?i)/Write', Write),
-     ('(?i)/Edit', EditCollection),
      ('(?i)/You/EditName', EditName),
+     ('(?i)/Author/([^/]+)', HumanPage),
+     ('(?i)/Author/([^/]+)/Favorites', Favorites),
+     ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),     
+     ('(?i)/EditCollection/([^/]+)', EditCollection),
      ('/([^/]+)', StoryPage)],
     debug=True)
 

@@ -7,11 +7,7 @@ def slugify(value):
     """
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
     value = unicode(re.sub('[^\w\s-]', '', value).lower()) # removed strip()
-    return re.sub('[-_\s]+', '-', value)
-
-#def strip_tags(value):
-#    """Returns the given HTML with all tags stripped."""
-#    return re.sub(r'<[^>]*?>', '', value)
+    return re.sub('[-_\s]+', '-', value).strip('-')
 
 def escape(html):
     """    Returns the given HTML with ampersands, quotes and angle
@@ -27,3 +23,4 @@ def cleanup(content):
 
 def cleanup_all(unsafe_list):
     return [cleanup(item) for item in unsafe_list]
+

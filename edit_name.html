@@ -7,9 +7,8 @@
 {% block page_title %}Enter Your Name:{% endblock %}
 
 {% block content %}
-<form action="/You/EditName" class="story_form" method="post">
-  <input type="hidden" name="human_key" value="{{ human.key }}" />
-  <input class="title" name="nickname" maxlength="23" />
+<form action="" class="story_form" method="post">
+  <input class="title" name="nickname" maxlength="25" />
   <input type="submit" value="Submit" />
 </form>
 {% endblock %}

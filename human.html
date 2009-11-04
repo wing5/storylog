@@ -16,12 +16,11 @@
 
 {% block page_actions %}
 {% if human and human.belongs_to_current_user %}
-<a class="action" href="/You/Organize">organize stories</a>
+<a class="action organize_link" href="/You/Organize">organize stories</a>
 {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="content_text">
 {% if collections %}
 {% for collection in collections %}
   <div class="story_group">
@@ -29,7 +28,7 @@
     <div class="collection_header">
       <h2><a href="{{ collection.url }}" class="collection_title">{{ collection.title|title }}</a></h2>
       {% if human and human.belongs_to_current_user %}
-      | <a href="/Edit?collection={{ collection.key.name }}" class="action">edit</a>
+      | <a href="/EditCollection/{{ collection.key.name|title }}" class="action">edit</a>
       {% endif %}
       | <a href="{{ collection.url }}" class="action">view</a>
     </div>
@@ -39,7 +38,7 @@
       <li>
         <a href="/{{ story_slug|title }}" class="story_title">{{ story_slug|title_from_slug }}</a>
         {% if human and human.belongs_to_current_user %}
-        | <a href="/Write?story={{ story_slug|title }}" class="action">edit</a>
+        | <a href="/Edit/{{ story_slug|title }}" class="action">edit</a>
         {% endif %}
       </li>
       {% endfor %}
@@ -87,5 +86,4 @@
 {% endfor %}
 {% endif %}
 
-</div>{# end of div content_text #}
 {% endblock content %}

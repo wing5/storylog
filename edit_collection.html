@@ -4,17 +4,19 @@
 
 {% block main_nav %}<a href="/You">RETURN TO PROFILE</a>{% endblock %}
 
-{% block page_title %}{{ collection_title }}{% endblock %}
+{% block page_title %}Edit Collection{% endblock %}
 
 {% block content %}
-<form action="/Edit" class="story_form" method="post">
-  <input type="hidden" name="collection_key" value="{{ collection_key }}" />
-  <label for="collection_title">Collection Title:</label>
-  <input class="title" name="collection_title" maxlength="33" id="collection_title" />
+{% if slug %}
+<form action="" class="story_form" method="post">
+  <input type="hidden" name="slug" value="{{ slug }}" />
+  <label for="title">Collection Title:</label>
+  <input class="title" name="title" maxlength="25" id="title" />
   <input type="submit" name="action" value="Save Collection Title" />
   <input type="submit" name="action" value="Delete Collection" onclick="return confirm('Are you sure you wish to delete this collection?')" />
 </form>
 
 <br />
 <p style="font-size: 90%; text-align: right;">Note: if you delete a collection its stories are moved into your main collection.</p>
+{% endif %}
 {% endblock %}

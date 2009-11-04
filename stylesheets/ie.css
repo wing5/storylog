@@ -29,3 +29,5 @@ textarea { margin: 0.5em 0; }
 select { margin: 0.5em 0; }
 
 button { position: relative; top: 0.25em; }
+
+body #page_actions .organize_link { display: none; }

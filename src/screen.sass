@@ -44,6 +44,7 @@ body
     :color #930
 .container
   +container
+  :text-align left
 .nav, .header, .content, .footer
   +column(!blueprint_grid_columns, true)
 .nav
@@ -63,11 +64,12 @@ body
   :padding-bottom 1.5em
   .errors
     :padding 10px 10px 10px 30px
-    :font-size 90%
     :background-color #fff
     :margin-bottom 1em
     :border 1px solid #ccc
     :color #930
+    :list-style-type disc
+    :list-style-position outside
   .page_helper
     :color #bbb
     :float right
@@ -132,27 +134,24 @@ body
       :color #666
     textarea
       :margin-bottom 1.5em
-  #collections_container
+  #left_column
     +column(6)
-    +append(1)
+    :margin-right 40px
     h3
       :font-weight bold
       :height 1.7em
-    ul
-      :background-color gray
-  #new_collection_container
+  #right_column
     +column(6, true)
     h3
       :font-weight bold
       :height 1.7em
       input
-        :width 97%
         :font 1em Georgia
         :color #900
     #new_collection
       :background white url(../images/draghere.png) no-repeat center center
   .collection
-    :margin .4em 0 .4em .4em
+    :margin 0.25em 0 1em .5em
     :min-height 1.5em
     :line-height 1.5em
     :border 1px solid gray
@@ -166,18 +165,16 @@ body
       :overflow hidden
       :white-space nowrap
       :background-color #F2F2E1
-      :margin-bottom 1px
-      :margin-right 1px
+      :margin 0 1px 1px 0
     li:hover
       :background-color #C99
       :cursor url(../images/grab.cur), default
     li.grabbed
       :cursor url(../images/grabbing.cur), default
-  #collection_form
-    :text-align center
-  #collection_form_container
-    +column(!blueprint_grid_columns)
+  #organize_form
+    :clear both
     :padding-top 2em
+    :text-align center
 .footer
   :text-transform uppercase
   :border-top 1px dotted #aaa
