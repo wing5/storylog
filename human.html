@@ -46,44 +46,24 @@
   </div>
 {% endfor %}{# end for collection #}
   {% if favorite_stories or favorite_collections %}
-  <hr />
+  <div class="divider"></div>
   {% endif %}
 {% endif %}{# end if collections #}
 {# FAVORITES #}
 {% if favorite_stories %}
-{% for story_slug in favorite_stories %}
 <div class="story_group">   
   <div class="favorites_header">
     <h2><a href="/You/FavoriteStories" class="favorites_title">Favorite Stories</a></h2>
-    | <a href="/You/FavoriteStories">view</a>
+    | <a href="/You/FavoriteStories" class="action">view</a>
   </div>
   <ul>
-    {% for story_slug in favorite_stories|slice:":5" %}
+    {% for story in favorite_stories %}
     <li>
-      <a href="/{{ story_slug|title }}">{{ story_slug|title_from_slug }}</a>
+      <a href="{{ story.url }}" class="story_title">{{ story.title|title }}</a>
     </li>
     {% endfor %}
   </ul>
 </div>
-{% endfor %}
-{% endif %}
-
-{% if favorite_collections %}
-{% for story_slug in favorite_collections %}
-<div class="story_group">   
-  <div class="favorites_header">
-    <h2><a href="/You/FavoriteCollections" class="favorites_title">Favorite Collections</a></h2>
-    | <a href="/You/FavoriteStories">view</a>
-  </div>
-  <ul>
-    {% for story_slug in favorite_collections|slice:":5" %}
-    <li>
-      <a href="/{{ story_slug|title }}">{{ story_slug|title_from_slug }}</a>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endfor %}
 {% endif %}
 
 {% endblock content %}

@@ -91,7 +91,8 @@ class Collection(db.Model):
         return '/Author/%s' % (self.user.user_id())
 
     def url(self):
-        return '/Author/%s/Collection/%s' % (self.user.user_id(), self.key().name().title())
+        return '/Author/%s/Collection/%s' % (self.user.user_id(),
+                                             self.key().name().title())
 
     def belongs_to_current_user(self):
         return users.get_current_user() == self.user
@@ -102,9 +103,10 @@ class Story(db.Model):
     title = db.StringProperty(required=True, indexed=False)
     content = db.TextProperty(required=True)
     rand_id = db.FloatProperty(indexed=True)
-    date = db.DateTimeProperty(auto_now_add=True, indexed=False) #not used
-    fav_count = db.IntegerProperty(required=True, default=0, indexed=False)
+    date = db.DateTimeProperty(auto_now_add=True)
     author_name = db.StringProperty(indexed=False)
+    fav_count = db.IntegerProperty(required=True, default=0, indexed=False)
+    flagged = db.IntegerProperty(required=True, default=0)
 
     def author_url(self):
         return '/Author/%s' % (self.user.user_id())
@@ -119,8 +121,15 @@ class Story(db.Model):
         return users.get_current_user() == self.user
 
     def favorited_by_current_user(self):
-        return False
-
+        user = users.get_current_user()
+        if user:
+            fav_key = db.Key.from_path('Story', self.key().name(),
+                                       'Favorite', 'fav')
+            query = Favorite.all(keys_only=True)
+            query.filter('__key__ =', fav_key)
+            query.filter('favorited_by =', user.user_id())
+            return query.get()
+                                       
     @staticmethod
     def make_unique_slug(title):
         """A Story's title is transformed into a slug. If this slug
@@ -134,14 +143,14 @@ class Story(db.Model):
         else:
             raise NotUniqueError
 
-class FavoriteIndex(db.Model):
+class Favorite(db.Model):
     """
     To get a list of people who favorited an item.
 
-    key_name = item's key name
+    key_name = 'fav'
     parent = story or collection
     """
-    favorited_by = db.StringListProperty() #list of uids
+    favorited_by = db.StringListProperty(default=None) #list of uids
 
 class BaseRequestHandler(webapp.RequestHandler):
     def generate(self, template_name, template_values={}):
@@ -306,6 +315,13 @@ class HumanPage(BaseRequestHandler):
                 self.redirect(users.create_login_url(self.request.uri))
                 return 
             user_id = user.user_id()
+
+            query = Favorite.all(keys_only=True)
+            query.filter('favorited_by =', user_id)
+            fav_keys = query.fetch(5)
+            fav_stories_keys = [k.parent() for k in fav_keys]
+            fav_stories = db.get(fav_stories_keys)
+            
             human = Human.get_by_key_name(user_id)
             if human:
                 collections = human.get_collections()
@@ -313,12 +329,19 @@ class HumanPage(BaseRequestHandler):
                     'nickname': human.nickname,
                     'human': human,
                     'collections': collections,
+                    'favorite_stories': fav_stories,
                     })
             else:
                 self.generate('human.html', {
                     'nickname': user.nickname().split('@')[0], 
                     })
         else:
+            query = Favorite.all(keys_only=True)
+            query.filter('favorited_by =', user_id)
+            fav_keys = query.fetch(5)
+            fav_stories_keys = [k.parent() for k in fav_keys]
+            fav_stories = db.get(fav_stories_keys)
+            
             human = Human.get_by_key_name(user_id)
             errors = []
 
@@ -330,6 +353,7 @@ class HumanPage(BaseRequestHandler):
                     'nickname': human.nickname,
                     'human': human,
                     'collections': collections,
+                    'favorite_stories': fav_stories,
                     })
             else:
                 self.generate('human.html', {
@@ -544,7 +568,28 @@ class CollectionPage(BaseRequestHandler):
                 'errors': errors,
                 })
 ###
-class Favorites(BaseRequestHandler):
+
+class FavoriteStory(BaseRequestHandler):
+    @login_required
+    def get(self, slug):
+        user_id = users.get_current_user().user_id()
+        story = Story.get_by_key_name(slug.lower())
+        if not story:
+            self.error(404)
+            return
+        favorite = Favorite.get_by_key_name('fav', parent=story)
+        if not favorite:
+            favorite = Favorite(
+                parent = story,
+                key_name = 'fav')
+        if user_id not in favorite.favorited_by:
+            favorite.favorited_by.append(user_id)
+        else:
+            favorite.favorited_by.remove(user_id)
+        favorite.put()
+        self.redirect(story.url())
+
+class FavoritesPage(BaseRequestHandler):
     def get(self, user_id):
         author = Author.get_by_key_name(user_id)
         errors = []
@@ -575,6 +620,8 @@ application = webapp.WSGIApplication(
      ('(?i)/Author/([^/]+)/Favorites', Favorites),
      ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),     
      ('(?i)/EditCollection/([^/]+)', EditCollection),
+     ('(?i)/FavoriteStory/([^/]+)', FavoriteStory),
+     ('(?i)/FavoriteCollection/([^/]+)/([^/]+)', FavoriteCollection),
      ('/([^/]+)', StoryPage)],
     debug=True)
 
