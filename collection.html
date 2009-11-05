@@ -2,7 +2,7 @@
 
 {% block head_title %}
 {% for collection in collections %}
-{{ collection.title }} -
+{{ collection.title }} - 
 {% endfor %}
 {{ nickname }} |
 {% endblock %}
@@ -18,4 +18,23 @@
 {% block page_helper %}
 {% endblock %}
 {% block page_actions %}
+{% endblock %}
+
+{% block content %}
+{% if collections %}
+{% for collection in collections %}
+  <div class="story_group">
+    <ul>
+      {% for story_slug in collection.stories %}
+      <li>
+        <a href="/{{ story_slug|title }}" class="story_title" title="View Story: {{ story_slug|title_from_slug }}">{{ story_slug|title_from_slug }}</a>
+        {% if human and human.belongs_to_current_user %}
+        | <a href="/Edit/{{ story_slug|title }}" class="action" title="Edit Story: {{ story_slug|title_from_slug }}">edit</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>    
+  </div>
+{% endfor %}
+{% endif %}
 {% endblock %}

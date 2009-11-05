@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block head_title %}
+Newest Stories | 
+{% endblock %}
+
+{% block page_title %}
+Newest Stories
+{% endblock %}
+
+{% block content %}
+{% if stories %}
+{% for story in stories %}
+<div class="story_group">
+  <h2><a href="{{ story.url }}" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a></h2>
+  <ul>
+    <li>
+      {{ story.content|truncatewords:"20" }}
+    </li>
+  </ul>
+</div>
+{% endfor %}
+
+<div class="paginate">
+{% if next %}
+<a href="/Stories/Newest?bookmark={{ next }}" class="action" title="Next Page">next page</a>
+{% endif %}
+{% if not first %}
+<a href="/Stories/Newest" class="action" title="Return to beginning">return to beginning</a>
+{% endif %}
+</div>
+
+{% endif %}
+{% endblock %}

@@ -7,13 +7,18 @@
 {% endblock %}
 
 {% block page_helper %}
-<a href="{{ story.url }}" class="action">link</a>
-{% if user and story %}
-  {% if not story.favorited_by_current_user %}
-  | <a href="/Favorite/{{ story.key.name|title }}" class="action">save</a>
-  {% else %}
-  | <a href="/Favorite/{{ story.key.name|title }}" class="action">unsave</a>
+{% if story %}
+<a href="{{ story.url }}" class="action" title="Link to {{ story.title|title }}">link</a>
+{% if user %}
+  {% if admin %}
+  | <a href="/Flag/{{ story.key.name|title }}" class="action" title="Flag story as spam">flag</a>
   {% endif %}
+  {% if not story.favorited_by_current_user %}
+  | <a href="/Favorite/{{ story.key.name|title }}" class="action" title="Save to favorites">save</a>
+  {% else %}
+  | <a href="/Favorite/{{ story.key.name|title }}" class="action" title="Remove from favorites">unsave</a>
+  {% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}
 

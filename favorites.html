@@ -16,7 +16,7 @@ Favorites{% if human %} of {{ human.nickname }}{% endif %}
   <ul>
     {% for story in favorite_stories %}
     <li>
-      <a href="{{ story.url }}" class="story_title">{{ story.title|title }}</a>
+      <a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a>
     </li>
     {% endfor %}
   </ul>

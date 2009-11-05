@@ -74,6 +74,8 @@ body a.action:hover { color: #930; }
 .content .content_text { padding-left: 5px; }
 .content .content_text p { margin-bottom: 1em; }
 .content .content_text .divider { height: 1px; background-color: #ccc; margin: 3em 0 2em 0; }
+.content .content_text .paginate { text-align: right; }
+.content .content_text .aside { font-size: 90%; color: #666; }
 .content .content_author { text-align: right; margin-right: 2em; }
 .content .story_group { margin-bottom: 10px; color: #bbb; }
 .content .story_group h2 { display: inline; }
@@ -82,8 +84,8 @@ body a.action:hover { color: #930; }
 .content .story_group li a.story_title:hover { color: #444; }
 .content .story_group .collection_header h2 a { color: #930; }
 .content .story_group .collection_header h2 a:hover { color: #900; }
-.content .story_group .favorites_header h2 a { color: #040; }
-.content .story_group .favorites_header h2 a:hover { color: #060; }
+.content .story_group .favorites_header h2 a { color: #352; }
+.content .story_group .favorites_header h2 a:hover { color: #050; }
 .content .story_form .title { font-family: Georgia; }
 .content .story_form .form_note { float: right; font-size: 90%; padding-right: 30px; color: #666; }
 .content .story_form textarea { margin-bottom: 1.5em; }

@@ -1,10 +1,10 @@
 import os
-import re
 from utils import slugify, cleanup
-from config import error, STORY_LENGTH, COL_LENGTH, USER_LENGTH
+from config import error, STORY_LENGTH, COL_LENGTH, USER_LENGTH, PAGESIZE
 from random import random
 import itertools
 import functools
+import datetime #for conversion to iso standard
 
 from google.appengine.ext.webapp import template
 from google.appengine.api import users
@@ -102,19 +102,15 @@ class Story(db.Model):
     title = db.StringProperty(required=True, indexed=False)
     content = db.TextProperty(required=True)
     rand_id = db.FloatProperty(indexed=True)
-    date = db.DateTimeProperty(auto_now_add=True)
+    when = db.StringProperty(required=True)
     author_name = db.StringProperty(indexed=False)
     fav_count = db.IntegerProperty(required=True, default=0, indexed=False)
-    flagged = db.IntegerProperty(required=True, default=0)
 
     def author_url(self):
         return '/Author/%s' % (self.user.user_id())
     
     def url(self):
         return '/%s' % (self.key().name().title())
-
-    def deleted(self):
-        return self.rand_id == None
 
     def belongs_to_current_user(self):
         return users.get_current_user() == self.user
@@ -186,13 +182,16 @@ class StoryPage(BaseRequestHandler):
     def get(self, slug):
         slug = slug.lower() #lowercase incoming 
         story = Story.get_by_key_name(slug)
+        admin = users.is_current_user_admin()
+        
         errors = []
        
         if not story:
-            errors.append(error['story?'])
+            errors.append(error['story'])
         if not errors:
             self.generate('story.html', {
                 'story': story,
+                'admin': admin,
                  })
         else:
             self.generate('story.html', {
@@ -212,7 +211,7 @@ class NewStory(BaseRequestHandler):
             slug = Story.make_unique_slug(title)
         except NotUniqueError:
             errors.append(error['unique'])
-        if slug in ['you', 'new']:
+        if slug in ['you', 'new', 'about']:
             errors.append(error['unique'])
 
         content = self.request_clean('content')
@@ -232,7 +231,8 @@ class NewStory(BaseRequestHandler):
                 title = title,
                 content = db.Text(content),
                 rand_id = rand_id,
-                author_name = human.nickname)
+                author_name = human.nickname,
+                when = datetime.datetime.now().isoformat())
 
             collection.stories.append(slug)
             db.put([story, collection])
@@ -274,16 +274,19 @@ class EditStory(BaseRequestHandler):
             self.error(403)
             return
         if action == 'Delete':
-            uid = users.get_current_user().user_id()
-            human = human.get_by_key_name(uid)
+            user_id = users.get_current_user().user_id()
+            human = Human.get_by_key_name(user_id)
             collections = human.get_collections()
             updated = []
             for col in collections:
                 if story.key().name() in col.stories:
-                    col.stories.remove(story)
+                    col.stories.remove(story.key().name())
                     updated.append(col)
             db.put(updated)
-            story.delete()
+            
+            to_del = Favorite.all(keys_only=True).ancestor(story).fetch(1000)
+            to_del.append(story.key())
+            db.delete(to_del)
             self.redirect('/You')
         else: #Save Story
             errors = []
@@ -304,11 +307,11 @@ class EditStory(BaseRequestHandler):
             
 class HumanPage(BaseRequestHandler):
     """Handles both:
-    * Public-facing profile:  /Author/{{ uid }}
     * Current author's page:  /You
+    * Public-facing profile:  /Author/{{ uid }}
     """
     def get(self, user_id = None):
-        if not user_id:
+        if not user_id: # /You
             user = users.get_current_user()
             if not user:
                 self.redirect(users.create_login_url(self.request.uri))
@@ -378,6 +381,8 @@ class EditName(BaseRequestHandler):
 
     @human_needed
     def post(self, human):
+        errors = []
+        nickname = self.request_clean('nickname', USER_LENGTH)
         if not nickname:
             errors.append(error['nickname'])
         if not errors:
@@ -571,6 +576,42 @@ class CollectionPage(BaseRequestHandler):
                 'errors': errors,
                 })
 
+class FlagStory(BaseRequestHandler):
+    @login_required
+    def get(self, slug):
+        if not users.is_current_user_admin():
+            self.error(403)
+            return
+        else:
+            story = Story.get_by_key_name(slug.lower())
+            story.rand_id = None
+            story.put()
+            self.redirect('/Stories/Newest')
+
+class NewestStories(BaseRequestHandler):
+    def get(self):
+        first = True
+        next = None
+        prev = None
+        bookmark = self.request.get('bookmark')
+        if bookmark:
+            query = Story.all()
+            query.order('-when')
+            query.filter('when <=', bookmark)
+            stories = query.fetch(PAGESIZE+1)
+            first = False
+        else:
+            stories = Story.all().order('-when').fetch(PAGESIZE+1)
+        if len(stories) == PAGESIZE+1:
+            next = stories[-1].when
+            stories = stories[:PAGESIZE]
+        self.generate('date.html', {
+            'stories': stories,
+            'next': next,
+            'prev': prev,
+            'first': first,
+            })
+
 class FavoriteStory(BaseRequestHandler):
     @login_required
     def get(self, slug):
@@ -608,7 +649,10 @@ class FavoritesPage(BaseRequestHandler):
             'favorite_stories': favorite_stories,
             'user_id': user_id,
             })
-
+        
+class AboutPage(BaseRequestHandler):
+    def get(self):
+        self.generate('about.html')
 
 
 
@@ -616,6 +660,7 @@ class FavoritesPage(BaseRequestHandler):
 # with the broader matches go toward the bottom
 application = webapp.WSGIApplication(
     [('/', MainPage),
+     ('(?i)/About', AboutPage),     
      ('(?i)/New', NewStory),
      ('(?i)/Edit/([^/]+)', EditStory),     
      ('(?i)/You', HumanPage),
@@ -626,6 +671,8 @@ application = webapp.WSGIApplication(
      ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),     
      ('(?i)/EditCollection/([^/]+)', EditCollection),
      ('(?i)/Favorite/([^/]+)', FavoriteStory),
+     ('(?i)/Flag/([^/]+)', FlagStory),
+     ('(?i)/Stories/Newest', NewestStories),
      ('/([^/]+)', StoryPage)],
     debug=True)
 

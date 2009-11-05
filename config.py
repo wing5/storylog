@@ -1,10 +1,10 @@
 STORY_LENGTH = 35
 COL_LENGTH = 25
 USER_LENGTH = 25
-
+PAGESIZE = 5
 
 error = {
-'unique': "That story title is being used. Sorry.",
+'unique': "That story title is being used already. Sorry.",
 'title': "Please enter a title.",
 'slug': "Please enter a title that has at least one letter or number.",
 'content': "Please enter a story.",

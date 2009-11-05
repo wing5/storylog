@@ -2,13 +2,13 @@
 
 {% block head_title %}{% if slug %}Edit Story |{% else %}New Story | {% endif %}{% endblock %}
 
-{% block page_title %}{% if slug %}{{ title|title }}{% else %}New Story{% endif %}{% endblock %}
+{% block page_title %}{% if slug %}Editing: {{ title|title }}{% else %}New Story{% endif %}{% endblock %}
 
 {% block content %}
 <form class="story_form" action="" method="post">
   <input type="hidden" name="slug" value="{% if slug %}{{ slug }}{% endif %}" />
   {% if not slug %}
-    <div class="form_note">can't change this story's title later</div>
+    <div class="form_note">can't change a story's title later</div>
     <label for="story_title">Title: </label>
     <input class="title" id="story_title" name="title" maxlength="35" value="{{ title }}" />
   {% else %}

@@ -10,13 +10,13 @@
 
 {% block page_helper %}
 {% if human and human.belongs_to_current_user %}
-<a class="action" href="/You/EditName">edit name</a>
+<a class="action" href="/You/EditName" title="Edit Your Nickname">edit name</a>
 {% endif %}
 {% endblock %}
 
 {% block page_actions %}
 {% if human and human.belongs_to_current_user %}
-<a class="action organize_link" href="/You/Organize">organize stories</a>
+<a class="action organize_link" href="/You/Organize" title="Organize Stories into Collections">organize stories</a>
 {% endif %}
 {% endblock %}
 
@@ -26,19 +26,19 @@
   <div class="story_group">
     {% ifnotequal collection.key.name "main-collection" %}
     <div class="collection_header">
-      <h2><a href="{{ collection.url }}" class="collection_title">{{ collection.title|title }}</a></h2>
+      <h2><a href="{{ collection.url }}" class="collection_title" title="View Collection">{{ collection.title|title }}</a></h2>
       {% if human and human.belongs_to_current_user %}
-      | <a href="/EditCollection/{{ collection.key.name|title }}" class="action">edit</a>
+      | <a href="/EditCollection/{{ collection.key.name|title }}" class="action"title="Edit Collection Title">edit</a>
       {% endif %}
-      | <a href="{{ collection.url }}" class="action">view</a>
+      | <a href="{{ collection.url }}" class="action" title="View Collection">view</a>
     </div>
     {% endifnotequal %}
     <ul>
       {% for story_slug in collection.profile_stories %}
       <li>
-        <a href="/{{ story_slug|title }}" class="story_title">{{ story_slug|title_from_slug }}</a>
+        <a href="/{{ story_slug|title }}" class="story_title" title="View Story: {{ story_slug|title_from_slug }}">{{ story_slug|title_from_slug }}</a>
         {% if human and human.belongs_to_current_user %}
-        | <a href="/Edit/{{ story_slug|title }}" class="action">edit</a>
+        | <a href="/Edit/{{ story_slug|title }}" class="action" title="Edit Story: {{ story_slug|title_from_slug }}">edit</a>
         {% endif %}
       </li>
       {% endfor %}
@@ -53,13 +53,13 @@
 {% if favorite_stories %}
 <div class="story_group">   
   <div class="favorites_header">
-    <h2><a href="/Author/{{ user_id }}/Favorites" class="favorites_title">Favorite Stories</a></h2>
-    | <a href="/Author/{{ user_id }}/Favorites" class="action">view</a>
+    <h2><a href="/Author/{{ user_id }}/Favorites" class="favorites_title" title="View Favorites">Favorite Stories</a></h2>
+    | <a href="/Author/{{ user_id }}/Favorites" class="action" title="View Favorites">view</a>
   </div>
   <ul>
     {% for story in favorite_stories %}
     <li>
-      <a href="{{ story.url }}" class="story_title">{{ story.title|title }}</a>
+      <a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a>
     </li>
     {% endfor %}
   </ul>
