@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}
+{% block head_title %}
 {{ nickname }} | 
 {% endblock %}
 
@@ -53,8 +53,8 @@
 {% if favorite_stories %}
 <div class="story_group">   
   <div class="favorites_header">
-    <h2><a href="/You/FavoriteStories" class="favorites_title">Favorite Stories</a></h2>
-    | <a href="/You/FavoriteStories" class="action">view</a>
+    <h2><a href="/Author/{{ user_id }}/Favorites" class="favorites_title">Favorite Stories</a></h2>
+    | <a href="/Author/{{ user_id }}/Favorites" class="action">view</a>
   </div>
   <ul>
     {% for story in favorite_stories %}

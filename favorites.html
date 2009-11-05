@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block head_title %}
+Favorites{% if human %} of {{ human.nickname }}{% endif %} |
+{% endblock %}
+
+{% block main_nav %}<a href="/Author/{{ user_id }}">RETURN TO AUTHOR PAGE</a>{% endblock %}
+
+{% block page_title %}
+Favorites{% if human %} of {{ human.nickname }}{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if favorite_stories %}
+<div class="story_group">   
+  <ul>
+    {% for story in favorite_stories %}
+    <li>
+      <a href="{{ story.url }}" class="story_title">{{ story.title|title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

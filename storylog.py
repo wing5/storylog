@@ -79,7 +79,6 @@ class Collection(db.Model):
     user = db.UserProperty(auto_current_user_add=True, indexed=False)
     title = db.StringProperty(indexed=False, required=True)
     stories = db.StringListProperty(indexed=False) #list of slugs, should index?
-    fav_count = db.IntegerProperty(default=0, indexed=False)
 
     def profile_stories(self):
         if self.key().name() == 'main-collection':
@@ -330,10 +329,13 @@ class HumanPage(BaseRequestHandler):
                     'human': human,
                     'collections': collections,
                     'favorite_stories': fav_stories,
+                    'user_id': user_id, #for the favorites page
                     })
             else:
                 self.generate('human.html', {
-                    'nickname': user.nickname().split('@')[0], 
+                    'nickname': user.nickname().split('@')[0],
+                    'favorite_stories': fav_stories,
+                    'user_id': user_id,
                     })
         else:
             query = Favorite.all(keys_only=True)
@@ -346,7 +348,7 @@ class HumanPage(BaseRequestHandler):
             errors = []
 
             if not human:
-                errors.append(error['author?'])
+                errors.append(error['author'])
             if not errors:
                 collections = human.get_collections()
                 self.generate('human.html', {
@@ -354,6 +356,7 @@ class HumanPage(BaseRequestHandler):
                     'human': human,
                     'collections': collections,
                     'favorite_stories': fav_stories,
+                    'user_id': user_id,
                     })
             else:
                 self.generate('human.html', {
@@ -567,7 +570,6 @@ class CollectionPage(BaseRequestHandler):
             self.generate('collection.html', {
                 'errors': errors,
                 })
-###
 
 class FavoriteStory(BaseRequestHandler):
     @login_required
@@ -584,26 +586,29 @@ class FavoriteStory(BaseRequestHandler):
                 key_name = 'fav')
         if user_id not in favorite.favorited_by:
             favorite.favorited_by.append(user_id)
+            story.fav_count += 1
         else:
             favorite.favorited_by.remove(user_id)
-        favorite.put()
+            story.fav_count -= 1
+        db.put([favorite, story])
         self.redirect(story.url())
 
 class FavoritesPage(BaseRequestHandler):
     def get(self, user_id):
-        author = Author.get_by_key_name(user_id)
-        errors = []
+        query = Favorite.all(keys_only=True)
+        query.filter('favorited_by =', user_id)
+        fav_keys = query.fetch(1000)
+        fav_stories_keys = [k.parent() for k in fav_keys]
+        favorite_stories = db.get(fav_stories_keys)
 
-        if not author:
-            errors.append("This is not a valid Author page. Sorry.")
-        if not errors:
-            self.generate('favorites_page.html', {
-                'author': author,
-                })
-        else:
-            self.generate('favorites_page.html', {
-                'errors': errors,
-                })
+        human = Human.get_by_key_name(user_id) #just for nickname
+
+        self.generate('favorites.html', {
+            'human': human,
+            'favorite_stories': favorite_stories,
+            'user_id': user_id,
+            })
+
 
 
 
@@ -617,11 +622,10 @@ application = webapp.WSGIApplication(
      ('(?i)/You/Organize', Organize),
      ('(?i)/You/EditName', EditName),
      ('(?i)/Author/([^/]+)', HumanPage),
-     ('(?i)/Author/([^/]+)/Favorites', Favorites),
+     ('(?i)/Author/([^/]+)/Favorites', FavoritesPage),
      ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),     
      ('(?i)/EditCollection/([^/]+)', EditCollection),
-     ('(?i)/FavoriteStory/([^/]+)', FavoriteStory),
-     ('(?i)/FavoriteCollection/([^/]+)/([^/]+)', FavoriteCollection),
+     ('(?i)/Favorite/([^/]+)', FavoriteStory),
      ('/([^/]+)', StoryPage)],
     debug=True)
 

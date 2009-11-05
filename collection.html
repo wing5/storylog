@@ -1,5 +1,12 @@
 {% extends "human.html" %}
 
+{% block head_title %}
+{% for collection in collections %}
+{{ collection.title }} -
+{% endfor %}
+{{ nickname }} |
+{% endblock %}
+
 {% block main_nav %}<a href="{{ human.url }}">RETURN TO AUTHOR PAGE</a>{% endblock %}
 
 {% block page_title %}

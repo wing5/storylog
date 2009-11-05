@@ -10,9 +10,9 @@
 <a href="{{ story.url }}" class="action">link</a>
 {% if user and story %}
   {% if not story.favorited_by_current_user %}
-  | <a href="/FavoriteStory/{{ story.key.name|title }}" class="action">save</a>
+  | <a href="/Favorite/{{ story.key.name|title }}" class="action">save</a>
   {% else %}
-  | <a href="/FavoriteStory/{{ story.key.name|title }}" class="action">unsave</a>
+  | <a href="/Favorite/{{ story.key.name|title }}" class="action">unsave</a>
   {% endif %}
 {% endif %}
 {% endblock %}
