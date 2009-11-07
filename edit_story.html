@@ -2,7 +2,7 @@
 
 {% block head_title %}{% if slug %}Edit Story |{% else %}New Story | {% endif %}{% endblock %}
 
-{% block page_title %}{% if access %}{% if slug %}Editing: {{ title|title }}{% else %}New Story{% endif %}{% endif %}{% endblock %}
+{% block page_title %}{% if access %}{% if slug %}Editing: {{ title }}{% else %}New Story{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 {% if access %}

@@ -126,17 +126,22 @@ class Story(db.Model):
             return query.get()
                                        
     @staticmethod
-    def make_unique_slug(title):
+    def make_unique_slug(title, errors):
         """A Story's title is transformed into a slug. If this slug
         hasn't been taken already, it is returned. Otherwise,
         an error is returned.
         """
-        story_slug = slugify(title)
-        story = Story.get_by_key_name(story_slug)
-        if story_slug and not story:
-            return story_slug
+        slug = slugify(title)
+        if slug:
+            story = Story.get_by_key_name(slug)
+            if not story and slug not in ['you', 'new', 'about']:
+                return slug, errors
+            else:
+                errors.append(error['unique'])
+                return slug, errors
         else:
-            raise NotUniqueError
+            errors.append(error['slug'])
+            return slug, errors
 
 class Favorite(db.Model):
     """
@@ -170,6 +175,9 @@ class BaseRequestHandler(webapp.RequestHandler):
             return cleanup(self.request.get(input_name))[:max_length]
         else:
             return cleanup(self.request.get(input_name))
+
+    def request_truncated(self, input_name, max_length = None):
+        return self.request.get(input_name)[:max_length]
 
 class MainPage(BaseRequestHandler):
     def get(self):
@@ -208,13 +216,9 @@ class NewStory(BaseRequestHandler):
     def post(self):
         errors = []
 
-        title = self.request_clean('title', STORY_LENGTH)
-        try:
-            slug = Story.make_unique_slug(title)
-        except NotUniqueError:
-            errors.append(error['unique'])
-        if slug in ['you', 'new', 'about']:
-            errors.append(error['unique'])
+        us_title = self.request_truncated('title', STORY_LENGTH)
+        slug, errors = Story.make_unique_slug(us_title, errors)
+        title = cleanup(us_title)
 
         content = self.request_clean('content')
         if not content:
@@ -287,9 +291,11 @@ class EditStory(BaseRequestHandler):
                     updated.append(col)
             db.put(updated)
             
-            to_del = Favorite.all(keys_only=True).ancestor(story).fetch(1000)
-            to_del.append(story.key())
-            db.delete(to_del)
+            favorite = Favorite.get_by_key_name('fav', parent=story)
+            if favorite:
+                db.delete([favorite, story])
+            else:
+                story.delete()
             self.redirect('/You')
         else: #Save Story
             errors = []
@@ -431,8 +437,9 @@ class Organize(BaseRequestHandler):
     def post(self, human):
         stories_new_string = cleanup(self.request.get('new'))
         stories_new = stories_new_string.split(',')
-        title_new = self.request_clean('new_title', COL_LENGTH)
-        slug_new = slugify(title_new)
+        us_title_new = self.request_truncated('new_title', COL_LENGTH)
+        slug_new = slugify(us_title_new)
+        title_new = cleanup(us_title_new)
         if not slug_new:
             title_new = "Collection Title"
             slug_new = "collection-title"
@@ -503,8 +510,9 @@ class EditCollection(BaseRequestHandler):
         errors = []
         slug = self.request.get('slug')
         collection = Collection.get_by_key_name(slug, parent = human)
-        title = self.request_clean('title', COL_LENGTH)
-        slug = slugify(unicode(title))
+        us_title = self.request_truncated('title', COL_LENGTH)
+        slug = slugify(us_title)
+        title = cleanup(us_title)
         action = self.request.get('action')
         if action not in ['Save Collection Title', 'Delete Collection']:
             self.error(403)
@@ -530,6 +538,7 @@ class EditCollection(BaseRequestHandler):
             else:
                 if slug == collection.key().name():
                     self.redirect('/You')
+                    return
                 existing_col = Collection.get_by_key_name(slug, parent=human)
                 if not existing_col:
                     new_col = Collection(

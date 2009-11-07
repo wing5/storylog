@@ -12,7 +12,7 @@ Newest Stories
 {% if stories %}
 {% for story in stories %}
 <div class="story_group">
-  <h2><a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a></h2>
+  <h2><a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title }}">{{ story.title }}</a></h2>
   <ul>
     <li>
       {{ story.content|truncatewords:"20" }}

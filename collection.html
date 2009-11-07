@@ -27,9 +27,9 @@
     <ul>
       {% for story_slug in collection.stories %}
       <li>
-        <a href="/{{ story_slug|title }}" class="story_title" title="View Story: {{ story_slug|title_from_slug }}">{{ story_slug|title_from_slug }}</a>
+        <a href="/{{ story_slug }}" class="story_title" title="View Story: {{ story_slug|title_from_slug }}">{{ story_slug|title_from_slug }}</a>
         {% if human and human.belongs_to_current_user %}
-        | <a href="/Edit/{{ story_slug|title }}" class="action" title="Edit Story: {{ story_slug|title_from_slug }}">edit</a>
+        | <a href="/Edit/{{ story_slug }}" class="action" title="Edit Story: {{ story_slug|title_from_slug }}">edit</a>
         {% endif %}
       </li>
       {% endfor %}
