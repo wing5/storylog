@@ -12,7 +12,7 @@ Newest Stories
 {% if stories %}
 {% for story in stories %}
 <div class="story_group">
-  <h2><a href="{{ story.url }}" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a></h2>
+  <h2><a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a></h2>
   <ul>
     <li>
       {{ story.content|truncatewords:"20" }}
@@ -22,11 +22,15 @@ Newest Stories
 {% endfor %}
 
 <div class="paginate">
-{% if next %}
-<a href="/Stories/Newest?bookmark={{ next }}" class="action" title="Next Page">next page</a>
+{% if next_page %}
+<div class="next">
+<a href="/Stories/Newest?page={{ next_page }}" class="action" title="Next Page">Next Page</a>
+</div>
 {% endif %}
-{% if not first %}
-<a href="/Stories/Newest" class="action" title="Return to beginning">return to beginning</a>
+{% if prev_page %}
+<div class="prev">
+<a href="/Stories/Newest?page={{ prev_page }}" class="action" title="Previous Page">Previous Page</a>
+</div>
 {% endif %}
 </div>
 

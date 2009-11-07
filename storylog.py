@@ -102,7 +102,7 @@ class Story(db.Model):
     title = db.StringProperty(required=True, indexed=False)
     content = db.TextProperty(required=True)
     rand_id = db.FloatProperty(indexed=True)
-    when = db.StringProperty(required=True)
+    when = db.DateTimeProperty(required=True, auto_now_add=True)
     author_name = db.StringProperty(indexed=False)
     fav_count = db.IntegerProperty(required=True, default=0, indexed=False)
 
@@ -201,7 +201,9 @@ class StoryPage(BaseRequestHandler):
 class NewStory(BaseRequestHandler):
     @login_required
     def get(self):
-        self.generate('edit_story.html')
+        self.generate('edit_story.html', {
+            'access': True,
+            })
         
     def post(self):
         errors = []
@@ -231,8 +233,7 @@ class NewStory(BaseRequestHandler):
                 title = title,
                 content = db.Text(content),
                 rand_id = rand_id,
-                author_name = human.nickname,
-                when = datetime.datetime.now().isoformat())
+                author_name = human.nickname)
 
             collection.stories.append(slug)
             db.put([story, collection])
@@ -242,6 +243,7 @@ class NewStory(BaseRequestHandler):
                 'errors': errors,
                 'title': title,
                 'content': content,
+                'access': True,
                 })
 
 class EditStory(BaseRequestHandler):
@@ -259,6 +261,7 @@ class EditStory(BaseRequestHandler):
                 'slug': slug.lower(),
                 'title': story.title,
                 'content': story.content,
+                'access': True,
                 })
         else:
             self.generate('edit_story.html', {
@@ -303,6 +306,7 @@ class EditStory(BaseRequestHandler):
                     'slug': slug,
                     'title': title,
                     'content': content,
+                    'access': True,
                     })
             
 class HumanPage(BaseRequestHandler):
@@ -590,26 +594,28 @@ class FlagStory(BaseRequestHandler):
 
 class NewestStories(BaseRequestHandler):
     def get(self):
-        first = True
-        next = None
-        prev = None
-        bookmark = self.request.get('bookmark')
-        if bookmark:
-            query = Story.all()
-            query.order('-when')
-            query.filter('when <=', bookmark)
-            stories = query.fetch(PAGESIZE+1)
-            first = False
-        else:
-            stories = Story.all().order('-when').fetch(PAGESIZE+1)
-        if len(stories) == PAGESIZE+1:
-            next = stories[-1].when
-            stories = stories[:PAGESIZE]
+        max_results = 1000
+        max_pages = max_results/PAGESIZE
+
+        page = self.request.get_range('page', min_value=0, max_value=max_pages,
+                                      default=0)
+        start = page * PAGESIZE
+        stories = Story.all().order('-when').fetch(PAGESIZE+1, start)
+
+        more_stories = len(stories) > PAGESIZE
+
+        prev_page = None
+        if page:
+            prev_page = str(page - 1)
+
+        next_page = None
+        if more_stories:
+            next_page = page + 1
+
         self.generate('date.html', {
             'stories': stories,
-            'next': next,
-            'prev': prev,
-            'first': first,
+            'next_page': next_page,
+            'prev_page': prev_page,
             })
 
 class FavoriteStory(BaseRequestHandler):
