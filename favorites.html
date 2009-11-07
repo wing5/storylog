@@ -1,13 +1,19 @@
 {% extends "base.html" %}
 
 {% block head_title %}
-Favorites{% if human %} of {{ human.nickname }}{% endif %} |
+Favorites{% if nickname %} of {{ nickname }}{% endif %} |
 {% endblock %}
 
-{% block main_nav %}<a href="/Author/{{ user_id }}">RETURN TO AUTHOR PAGE</a>{% endblock %}
+{% block main_nav %}
+{% ifequal user.user_id user_id %}
+<a href="/You">RETURN TO PROFILE</a>
+{% else %}
+<a href="/Author/{{ user_id }}">RETURN TO AUTHOR</a>
+{% endifequal %}
+{% endblock %}
 
 {% block page_title %}
-Favorites{% if human %} of {{ human.nickname }}{% endif %}
+Favorites{% if nickname %} of {{ nickname }}{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -17,6 +23,9 @@ Favorites{% if human %} of {{ human.nickname }}{% endif %}
     {% for story in favorite_stories %}
     <li>
       <a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title|title }}">{{ story.title|title }}</a>
+      {% ifequal user.user_id user_id %}
+      | <a href="/Favorite{{ story.url }}?profile=1" class="action" title="Remove from favorites">unsave</a>
+      {% endifequal %}
     </li>
     {% endfor %}
   </ul>

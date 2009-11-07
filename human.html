@@ -28,7 +28,7 @@
     <div class="collection_header">
       <h2><a href="{{ collection.url }}" class="collection_title" title="View Collection">{{ collection.title }}</a></h2>
       {% if human and human.belongs_to_current_user %}
-      | <a href="/EditCollection/{{ collection.key.name }}" class="action"title="Edit Collection Title">edit</a>
+      | <a href="/EditCollection/{{ collection.key.name|title }}" class="action"title="Edit Collection Title">edit</a>
       {% endif %}
       | <a href="{{ collection.url }}" class="action" title="View Collection">view</a>
     </div>
@@ -36,9 +36,9 @@
     <ul>
       {% for story_slug in collection.profile_stories %}
       <li>
-        <a href="/{{ story_slug }}" class="story_title" title="View Story: {{ story_slug|title_from_slug }}">{{ story_slug|title_from_slug }}</a>
+        <a href="/{{ story_slug|title }}" class="story_title" title="View Story: {{ story_slug|title_from_slug }}">{{ story_slug|title_from_slug }}</a>
         {% if human and human.belongs_to_current_user %}
-        | <a href="/Edit/{{ story_slug }}" class="action" title="Edit Story: {{ story_slug|title_from_slug }}">edit</a>
+        | <a href="/Edit/{{ story_slug|title }}" class="action" title="Edit Story: {{ story_slug|title_from_slug }}">edit</a>
         {% endif %}
       </li>
       {% endfor %}
@@ -53,13 +53,16 @@
 {% if favorite_stories %}
 <div class="story_group">   
   <div class="favorites_header">
-    <h2><a href="/Author/{{ user_id }}/Favorites" class="favorites_title" title="View Favorites">Favorite Stories</a></h2>
-    | <a href="/Author/{{ user_id }}/Favorites" class="action" title="View Favorites">view</a>
+    <h2><a href="/Favorites/{{ user_id }}" class="favorites_title" title="View Favorites">Favorite Stories</a></h2>
+    | <a href="/Favorites/{{ user_id }}" class="action" title="View Favorites">view</a>
   </div>
   <ul>
     {% for story in favorite_stories %}
     <li>
       <a href="{{ story.url }}" class="story_title" title="View Story: {{ story.title }}">{{ story.title }}</a>
+      {% ifequal user.user_id user_id %}
+      | <a href="/Favorite{{ story.url }}?profile=1" class="action" title="Remove from favorites">unsave</a>
+      {% endifequal %}
     </li>
     {% endfor %}
   </ul>

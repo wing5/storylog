@@ -321,57 +321,50 @@ class HumanPage(BaseRequestHandler):
     * Public-facing profile:  /Author/{{ uid }}
     """
     def get(self, user_id = None):
-        if not user_id: # /You
-            user = users.get_current_user()
-            if not user:
-                self.redirect(users.create_login_url(self.request.uri))
-                return 
+        user = users.get_current_user()
+        if not user and not user_id: 
+            self.redirect(users.create_login_url(self.request.uri))
+            return 
+
+        if not user_id:
             user_id = user.user_id()
 
-            query = Favorite.all(keys_only=True)
-            query.filter('favorited_by =', user_id)
-            fav_keys = query.fetch(5)
-            fav_stories_keys = [k.parent() for k in fav_keys]
-            fav_stories = db.get(fav_stories_keys)
-            
-            human = Human.get_by_key_name(user_id)
-            if human:
-                collections = human.get_collections()
-                self.generate('human.html', {
-                    'nickname': human.nickname,
-                    'human': human,
-                    'collections': collections,
-                    'favorite_stories': fav_stories,
-                    'user_id': user_id, #for the favorites page
-                    })
-            else:
+        personal_profile = False
+        if user and (user_id == user.user_id()):
+            personal_profile = True
+
+        query = Favorite.all(keys_only=True)
+        query.filter('favorited_by =', user_id)
+        fav_keys = query.fetch(5)
+        fav_stories_keys = [k.parent() for k in fav_keys]
+        fav_stories = db.get(fav_stories_keys)
+
+        human = Human.get_by_key_name(user_id)
+        if human:
+            collections = human.get_collections()
+            self.generate('human.html', {
+                'nickname': human.nickname,
+                'human': human,
+                'collections': collections,
+                'favorite_stories': fav_stories,
+                'user_id': user_id, #for the favorites page
+                })
+        else: #user, not author
+            if personal_profile:
                 self.generate('human.html', {
                     'nickname': user.nickname().split('@')[0],
                     'favorite_stories': fav_stories,
                     'user_id': user_id,
                     })
-        else:
-            query = Favorite.all(keys_only=True)
-            query.filter('favorited_by =', user_id)
-            fav_keys = query.fetch(5)
-            fav_stories_keys = [k.parent() for k in fav_keys]
-            fav_stories = db.get(fav_stories_keys)
-            
-            human = Human.get_by_key_name(user_id)
-            errors = []
-
-            if not human:
-                errors.append(error['author'])
-            if not errors:
-                collections = human.get_collections()
+            elif fav_stories:
                 self.generate('human.html', {
-                    'nickname': human.nickname,
-                    'human': human,
-                    'collections': collections,
                     'favorite_stories': fav_stories,
                     'user_id': user_id,
                     })
-            else:
+            else: #not user, not author
+                errors = []
+                errors.append(error['author'])
+
                 self.generate('human.html', {
                     'errors': errors,
                     'nickname': "No Author",
@@ -435,7 +428,7 @@ class Organize(BaseRequestHandler):
 
     @human_needed
     def post(self, human):
-        stories_new_string = cleanup(self.request.get('new'))
+        stories_new_string = self.request_clean('new')
         stories_new = stories_new_string.split(',')
         us_title_new = self.request_truncated('new_title', COL_LENGTH)
         slug_new = slugify(us_title_new)
@@ -451,7 +444,7 @@ class Organize(BaseRequestHandler):
         all_stories_new = [] #list of story slugs
         updated_collections = [] #list of Collection instances
         for collection in collections_current:
-            stories_string = cleanup(self.request.get(collection.key().name()))
+            stories_string = self.request_clean(collection.key().name())
             stories = stories_string.split(',')
             valid_stories = [s for s in stories if s in all_stories]
             collection.stories = valid_stories
@@ -647,7 +640,11 @@ class FavoriteStory(BaseRequestHandler):
             favorite.favorited_by.remove(user_id)
             story.fav_count -= 1
         db.put([favorite, story])
-        self.redirect(story.url())
+        if self.request.get('profile'):
+            self.redirect('/You')
+            return
+        else:
+            self.redirect(story.url())
 
 class FavoritesPage(BaseRequestHandler):
     def get(self, user_id):
@@ -657,10 +654,17 @@ class FavoritesPage(BaseRequestHandler):
         fav_stories_keys = [k.parent() for k in fav_keys]
         favorite_stories = db.get(fav_stories_keys)
 
-        human = Human.get_by_key_name(user_id) #just for nickname
+        nickname = None
+        user = users.get_current_user()
+        if user and user.user_id() == user_id:
+            nickname = user.nickname().split('@')[0]
+        else:
+            human = Human.get_by_key_name(user_id)
+            if human:
+                nickname = human.nickname
 
         self.generate('favorites.html', {
-            'human': human,
+            'nickname': nickname,
             'favorite_stories': favorite_stories,
             'user_id': user_id,
             })
@@ -682,10 +686,10 @@ application = webapp.WSGIApplication(
      ('(?i)/You/Organize', Organize),
      ('(?i)/You/EditName', EditName),
      ('(?i)/Author/([^/]+)', HumanPage),
-     ('(?i)/Author/([^/]+)/Favorites', FavoritesPage),
      ('(?i)/Author/([^/]+)/Collection/([^/]+)', CollectionPage),     
      ('(?i)/EditCollection/([^/]+)', EditCollection),
      ('(?i)/Favorite/([^/]+)', FavoriteStory),
+     ('(?i)/Favorites/([^/]+)', FavoritesPage),
      ('(?i)/Flag/([^/]+)', FlagStory),
      ('(?i)/Stories/Newest', NewestStories),
      ('/([^/]+)', StoryPage)],
