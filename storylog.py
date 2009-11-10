@@ -76,7 +76,7 @@ class Collection(db.Model):
     key_name = collection_slug
     parent = human
     """
-    user = db.UserProperty(auto_current_user_add=True, indexed=False)
+    user = db.UserProperty(auto_current_user_add=True)
     title = db.StringProperty(indexed=False, required=True)
     stories = db.StringListProperty(indexed=False) #list of slugs, should index?
 
@@ -228,15 +228,11 @@ class NewStory(BaseRequestHandler):
             user = users.get_current_user()
             human, collection = human_and_collection_from_user(user)
 
-            rand_id = random()
-            if not Story.all().get():
-                rand_id = 1.0
-
             story = Story(
                 key_name = slug,
                 title = title,
                 content = db.Text(content),
-                rand_id = rand_id,
+                rand_id = random(),
                 author_name = human.nickname)
 
             collection.stories.append(slug)
@@ -692,8 +688,7 @@ application = webapp.WSGIApplication(
      ('(?i)/Favorites/([^/]+)', FavoritesPage),
      ('(?i)/Flag/([^/]+)', FlagStory),
      ('(?i)/Stories/Newest', NewestStories),
-     ('/([^/]+)', StoryPage)],
-    debug=True)
+     ('/([^/]+)', StoryPage)])
 
 def main():
   run_wsgi_app(application)
