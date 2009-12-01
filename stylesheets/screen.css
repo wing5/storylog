@@ -40,7 +40,7 @@ form input.text:focus, form input.title:focus, form textarea:focus, form select:
 
 html { height: 101%; }
 
-body { font-family: "Times New Roman",Times,serif; line-height: 1.4em; font-size: 112.5%; background: url(../images/bg.gif) repeat-y center top; }
+body { font-family: "Times New Roman",Times,serif; line-height: 1.4em; font-size: 112.5%; background: #D7E2EF url(../images/bg.gif) repeat-y center top; }
 body ul { list-style-type: none; list-style-position: inside; }
 body a { color: #666; }
 body a:hover { color: #222; }
